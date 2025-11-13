@@ -4,7 +4,7 @@ services:
     hostname: leafy
     networks:
       leafy_network:
-        ipv4_adress: 192.168.0.5
+        ipv4_address: 192.168.0.5
     build:
       dockerfile: Dockerfile
       args:

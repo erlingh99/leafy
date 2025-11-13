@@ -18,7 +18,7 @@ export const useSubscription = (t: any) => {
 
   const loadSubscriptions = async () => {
     try {
-      const response = await fetch(`https://leafy.lan/api/subscriptions`, {
+      const response = await fetch(`/api/subscriptions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -51,8 +51,8 @@ export const useSubscription = (t: any) => {
     }
 
     try {
-      const response = await fetch('https://leafy.lan/api/subscriptions', {
-        method: 'POST',
+      const response = await fetch('/api/subscriptions', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -88,7 +88,7 @@ export const useSubscription = (t: any) => {
   ): Promise<boolean> => {
 
     try {
-      const response = await fetch(`https://leafy.lan/api/subscriptions/${id}`, {
+      const response = await fetch(`/api/subscriptions/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ export const useSubscription = (t: any) => {
     const subscription = subscriptions.find((s) => s.id === id);
     
     try {
-      const response = await fetch(`https://leafy.lan/api/subscriptions/${id}`, {
+      const response = await fetch(`/api/subscriptions/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
