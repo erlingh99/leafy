@@ -1,0 +1,56 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Backend lint
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          target: lint
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Backend tests
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          target: test
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Frontend lint
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          target: lint
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Frontend tests
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          target: test
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

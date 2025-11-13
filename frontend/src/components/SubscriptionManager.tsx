@@ -1,0 +1,160 @@
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Subscription } from "@/hooks/useSubscription";
+
+interface SubscriptionManagerProps {
+  subscriptions: Subscription[];
+  onAddSubscription: (subscription: Partial<Subscription>) => Promise<boolean>;
+  onUpdateSubscription: (id: string, subscription: Partial<Subscription>) => Promise<boolean>;
+  onDeleteSubscription: (id: string) => Promise<void>;
+}
+
+export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
+  subscriptions,
+  onAddSubscription,
+  onUpdateSubscription,
+  onDeleteSubscription,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [newSubscription, setNewSubscription] = useState({ name: "", email: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingSubscription, setEditingSubscription] = useState({ name: "", email: "" });
+
+  const handleAdd = async () => {
+    if (newSubscription.name && newSubscription.email) {
+      await onAddSubscription(newSubscription);
+      setNewSubscription({ name: "", email: "" });
+    }
+  };
+
+  const handleEdit = (id: string, subscription: Subscription) => {
+    setEditingId(id);
+    setEditingSubscription({ name: subscription.name, email: subscription.email });
+  };
+
+  const handleSave = async () => {
+    if (editingId) {
+      await onUpdateSubscription(editingId, editingSubscription);
+      setEditingId(null);
+      setEditingSubscription({ name: "", email: "" });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await onDeleteSubscription(id);
+  };
+
+  return (
+    <>
+      <Button onClick={() => setIsOpen(true)}>Manage Subscriptions</Button>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Subscriptions</DialogTitle>
+            <DialogDescription>
+              Add, edit, or delete your subscriptions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {subscriptions.map((subscription) => (
+              <div
+                key={subscription.id}
+                className="flex justify-between items-center border p-2 rounded"
+              >
+                {editingId === subscription.id ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editingSubscription.name}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          name: e.target.value,
+                        })
+                      }
+                      className="border p-1 rounded"
+                    />
+                    <input
+                      type="email"
+                      value={editingSubscription.email}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          email: e.target.value,
+                        })
+                      }
+                      className="border p-1 rounded"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSave}
+                    >
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <span>{subscription.name}</span>
+                    <span>{subscription.email}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(subscription.id, subscription)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(subscription.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 mt-4">
+            <input
+              type="text"
+              placeholder="Name"
+              value={newSubscription.name}
+              onChange={(e) =>
+                setNewSubscription({ ...newSubscription, name: e.target.value })
+              }
+              className="border p-1 rounded"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={newSubscription.email}
+              onChange={(e) =>
+                setNewSubscription({ ...newSubscription, email: e.target.value })
+              }
+              className="border p-1 rounded"
+            />
+            <Button onClick={handleAdd}>Add</Button>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
