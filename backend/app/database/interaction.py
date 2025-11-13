@@ -8,7 +8,7 @@ from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Plant, Subscription
-from . import PlantDB, SubscriptionDB
+from .models import PlantDB, SubscriptionDB
 
 async def load_plants(db: AsyncSession) -> Dict[UUID, Plant]:
     """Load plants from the database."""
