@@ -1,5 +1,5 @@
 [project]
-name = "leafy-lapse"
+name = "leafy"
 version = "0.1.0"
 description = "Backend for the Leafy Project"
 readme = "README.md"

@@ -22,7 +22,7 @@ export const usePlants = (language: Language, t: any) => {
 
   const loadPlants = async () => {
     try {
-      const response = await fetch(`https://leafy.lan/api/plants`, {
+      const response = await fetch(`/api/plants`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -70,8 +70,8 @@ export const usePlants = (language: Language, t: any) => {
     }
 
     try {
-      const response = await fetch('https://leafy.lan/api/plants', {
-        method: 'POST',
+      const response = await fetch('/api/plants', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -121,7 +121,7 @@ export const usePlants = (language: Language, t: any) => {
     }
 
     try {
-      const response = await fetch(`https://leafy.lan/api/plants/${plantId}`, {
+      const response = await fetch(`/api/plants/${plantId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ export const usePlants = (language: Language, t: any) => {
     const plant = plants.find((p) => p.id === id);
     
     try {
-      const response = await fetch(`https://leafy.lan/api/plants/${id}`, {
+      const response = await fetch(`/api/plants/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ export const usePlants = (language: Language, t: any) => {
     const plant = plants.find((p) => p.id === id);
     
     try {
-      const response = await fetch(`https://leafy.lan/api/plants/${id}`, {
+      const response = await fetch(`/api/plants/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

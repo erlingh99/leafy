@@ -1,2 +1,2 @@
-# Leafy lapse backend
+# Leafy backend
 
