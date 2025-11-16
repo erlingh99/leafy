@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plant } from "@/hooks/usePlants";
+import { Translations } from "@/lib/translations";
 
 interface PlantCardProps {
   plant: Plant;
@@ -11,7 +12,7 @@ interface PlantCardProps {
   onWater: (id: string) => void;
   onEdit: (plant: Plant) => void;
   onDelete: (id: string) => void;
-  t: any;
+  t: Translations;
 }
 
 export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDelete, t }: PlantCardProps) => {
@@ -29,10 +30,10 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                 src={plant.image}
                 alt={plant.name}
                 className="w-24 h-32 object-cover rounded-full"
-                style={{ borderRadius: "50% / 60%" }}
+                style={{ borderRadius: "60% / 60%" }}
               />
             ) : (
-              <div className="w-24 h-32 bg-secondary flex items-center justify-center rounded-full" style={{ borderRadius: "50% / 60%" }}>
+              <div className="w-24 h-32 bg-secondary flex items-center justify-center rounded-full" style={{ borderRadius: "60% / 60%" }}>
                 <span className="text-4xl">🌱</span>
               </div>
             )}
@@ -60,7 +61,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-muted-foreground">
-                  {t.watered}: {new Date(plant.last_watered).toLocaleDateString()}
+                  {t.watered}: {new Date(plant.last_watered).toLocaleDateString("en-GB")}
                 </span>
               </div>
               <div className="text-sm font-medium">

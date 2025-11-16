@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { usePlants, Plant } from "@/hooks/usePlants";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -12,13 +11,12 @@ import { translations, Language } from "@/lib/translations";
 
 const Index = () => {
   const { theme, setTheme } = useTheme();
-  const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
   const [language, setLanguage] = useState<Language>("en");
   const t = translations[language];
-  
-  const { plants, addPlant, updatePlant, waterPlant, deletePlant, needsWater, getDaysUntilWatering } = usePlants(language, t);
+
+  const { plants, addPlant, updatePlant, waterPlant, deletePlant, needsWater, getDaysUntilWatering } = usePlants(t);
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
 
   const openAddDialog = () => {
@@ -66,7 +64,7 @@ const Index = () => {
           onOpenAddDialog={openAddDialog}
           t={t}
         />
-        
+
         <PlantDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}

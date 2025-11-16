@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/useToast";
 import { Plant } from "@/hooks/usePlants";
+import { Translations } from "@/lib/translations";
 
 interface PlantDialogProps {
   open: boolean;
@@ -17,7 +18,7 @@ interface PlantDialogProps {
     wateringInterval: string;
     image: string;
   }) => Promise<boolean>;
-  t: any;
+  t: Translations;
 }
 
 export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: PlantDialogProps) => {
@@ -62,7 +63,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
   };
 
   // Update local state when editing plant changes
-  useState(() => {
+  useEffect(() => {
     if (editingPlant) {
       setPlantData({
         name: editingPlant.name,
@@ -73,7 +74,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
     } else {
       setPlantData({ name: "", species: "", wateringInterval: "7", image: "" });
     }
-  });
+  }, [editingPlant]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
