@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(GZipMiddleware, minimum_size = 1000, compresslevel=5)
+app.add_middleware(GZipMiddleware, minimum_size = 1000, compresslevel=5) # ty: ignore[invalid-argument-type]
 
 # Mount static files for assets
 app.mount("/assets", StaticFiles(directory="../frontend/dist/assets"), name="assets")

@@ -1,8 +1,8 @@
 import logging
 from datetime import timedelta, datetime
 
-from sib_api_v3_sdk import Configuration, ApiClient, TransactionalEmailsApi, SendSmtpEmail
-from sib_api_v3_sdk.rest import ApiException
+from brevo_python import Configuration, ApiClient, TransactionalEmailsApi, SendSmtpEmail
+from brevo_python.rest import ApiException
 
 from ..database import load_subscriptions, load_plants, get_db
 from ..models import Plant, Subscription
@@ -34,7 +34,7 @@ async def send_email(API_KEY: str):
     api_instance = TransactionalEmailsApi(ApiClient(configuration))
 
     email = SendSmtpEmail(
-        to=[{"email": ";".join(map(lambda s: s.email, subs))}],
+        to=[{"email": s.email, "name": s.name} for s in subs],
         sender={"email": "erling.hjermstad@outlook.com", "name": "Leafy App"},
         subject="Watering reminder",
         text_content=

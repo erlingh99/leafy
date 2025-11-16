@@ -14,9 +14,9 @@ dependencies = [
     "sqlalchemy>=2.0.43",
     "alembic>=1.16.5",
     "aiosqlite>=0.21.0",
-    "sib-api-v3-sdk>=7.6.0",
     "apscheduler>=3.11.1",
     "dotenv>=0.9.9",
+    "brevo-python>=1.2.0",
 ]
 
 [build-system]
