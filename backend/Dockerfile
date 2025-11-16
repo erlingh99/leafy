@@ -4,9 +4,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 FROM base AS lint
-RUN pip install --no-cache-dir mypy ruff
+RUN pip install --no-cache-dir ty ruff
 COPY . .
-RUN mypy app/ && \
+RUN ty check . && \
     ruff check .
 
 FROM base AS test
