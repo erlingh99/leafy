@@ -1,10 +1,11 @@
 import { Plus, Droplet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Translations } from "@/lib/translations";
 
 interface EmptyPlantStateProps {
   onAddPlant: () => void;
-  t: any;
+  t: Translations;
 }
 
 export const EmptyPlantState = ({ onAddPlant, t }: EmptyPlantStateProps) => {
