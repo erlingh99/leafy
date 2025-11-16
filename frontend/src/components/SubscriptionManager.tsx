@@ -10,12 +10,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Subscription } from "@/hooks/useSubscription";
+import { Translations } from "@/lib/translations";
 
 interface SubscriptionManagerProps {
   subscriptions: Subscription[];
   onAddSubscription: (subscription: Partial<Subscription>) => Promise<boolean>;
   onUpdateSubscription: (id: string, subscription: Partial<Subscription>) => Promise<boolean>;
   onDeleteSubscription: (id: string) => Promise<void>;
+  t: Translations;
 }
 
 export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
@@ -23,6 +25,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   onAddSubscription,
   onUpdateSubscription,
   onDeleteSubscription,
+  t
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newSubscription, setNewSubscription] = useState({ name: "", email: "" });
@@ -55,13 +58,13 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)}>Manage Subscriptions</Button>
+      <Button onClick={() => setIsOpen(true)}>{t.subscriptionManageButton}</Button>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Manage Subscriptions</DialogTitle>
+            <DialogTitle>{t.subscriptionManageTitle}</DialogTitle>
             <DialogDescription>
-              Add, edit, or delete your subscriptions.
+              {t.subscriptionManageDescription}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -81,7 +84,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                           name: e.target.value,
                         })
                       }
-                      className="border p-1 rounded"
+                      className="border p-1 rounded w-full"
                     />
                     <input
                       type="email"
@@ -92,14 +95,14 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                           email: e.target.value,
                         })
                       }
-                      className="border p-1 rounded"
+                      className="border p-1 rounded w-full"
                     />
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleSave}
                     >
-                      Save
+                      {t.subscriptionSave}
                     </Button>
                   </>
                 ) : (
@@ -112,14 +115,14 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                         size="sm"
                         onClick={() => handleEdit(subscription.id, subscription)}
                       >
-                        Edit
+                        {t.subscriptionEdit}
                       </Button>
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDelete(subscription.id)}
                       >
-                        Delete
+                        {t.subscriptionDelete}
                       </Button>
                     </div>
                   </>
@@ -127,30 +130,30 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
               </div>
             ))}
           </div>
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-4 justify-between items-center">
             <input
               type="text"
-              placeholder="Name"
+              placeholder={t.subscriptionNamePlaceholder}
               value={newSubscription.name}
               onChange={(e) =>
                 setNewSubscription({ ...newSubscription, name: e.target.value })
               }
-              className="border p-1 rounded"
+              className="border p-1 rounded w-full"
             />
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t.subscriptionEmailPlaceholder}
               value={newSubscription.email}
               onChange={(e) =>
                 setNewSubscription({ ...newSubscription, email: e.target.value })
               }
-              className="border p-1 rounded"
+              className="border p-1 rounded w-full"
             />
-            <Button onClick={handleAdd}>Add</Button>
+            <Button onClick={handleAdd}>{t.subscriptionAdd}</Button>
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Close</Button>
+              <Button variant="outline">{t.subscriptionClose}</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { useTheme } from "@/components/ThemeProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Language } from "@/lib/translations";
+import { Language, Translations } from "@/lib/translations";
 import { SubscriptionManager } from "@/components/SubscriptionManager";
 import { Subscription } from "@/hooks/useSubscription";
 
@@ -20,6 +20,7 @@ interface MobileMenuProps {
   onAddSubscription: (subscription: Partial<Subscription>) => Promise<boolean>;
   onUpdateSubscription: (id: string, subscription: Partial<Subscription>) => Promise<boolean>;
   onDeleteSubscription: (id: string) => Promise<void>;
+  t: Translations;
 }
 
 export function MobileMenu({
@@ -29,6 +30,7 @@ export function MobileMenu({
   onAddSubscription,
   onUpdateSubscription,
   onDeleteSubscription,
+  t
 }: MobileMenuProps) {
   const { theme, setTheme } = useTheme();
 
@@ -45,13 +47,14 @@ export function MobileMenu({
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Menu</SheetTitle>
+          <SheetTitle>{t.menu}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-3 mt-6">
           <div className="w-full">
             <LanguageSwitcher
               currentLanguage={currentLanguage}
               onLanguageChange={onLanguageChange}
+              mobile={true}
             />
           </div>
           <Button
@@ -71,6 +74,7 @@ export function MobileMenu({
             onAddSubscription={onAddSubscription}
             onUpdateSubscription={onUpdateSubscription}
             onDeleteSubscription={onDeleteSubscription}
+            t={t}
           />
         </div>
       </SheetContent>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "./useToast";
+import { Translations } from "@/lib/translations";
 
 export interface Subscription {
   id: string;
@@ -8,7 +9,7 @@ export interface Subscription {
 }
 
 
-export const useSubscription = (t: any) => {
+export const useSubscription = (t: Translations) => {
   const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
 
@@ -36,7 +37,11 @@ export const useSubscription = (t: any) => {
       const data = await response.json();
       setSubscriptions(data || []);
     } catch (error) {
-      console.error("Error fetching subscriptions:", error);
+      toast({
+        title: t.errorLoadingSubscription,
+        description: error.message,
+        variant: "destructive",
+      })
     }
   };
 
@@ -68,13 +73,13 @@ export const useSubscription = (t: any) => {
 
       toast({
         title: t.subscriptionAdded, //TODO
-        description: t.plantAddedSubscription(subscriptionData.name), //TODO
+        description: t.subscriptionAddedDescription(subscriptionData.name), //TODO
       });
       loadSubscriptions();
       return true;
-    } catch (error: any) {
+    } catch (error) {
       toast({
-        title: t.errorAdding,
+        title: t.errorAddingSubscription,
         description: error.message,
         variant: "destructive",
       });
@@ -106,9 +111,9 @@ export const useSubscription = (t: any) => {
       });
       loadSubscriptions();
       return true;
-    } catch (error: any) {
+    } catch (error) {
       toast({
-        title: t.errorUpdating,
+        title: t.errorUpdatingSubscription,
         description: error.message,
         variant: "destructive",
       });
@@ -133,12 +138,12 @@ export const useSubscription = (t: any) => {
 
       toast({
         title: t.subscriptionDeleted, //TODO
-        description: t.plantSubscriptionDescription(subscription?.name || ""), //TODO translations
+        description: t.subscriptionDeletedDescription(subscription?.name || ""), //TODO translations
       });
       loadSubscriptions();
-    } catch (error: any) {
+    } catch (error) {
       toast({
-        title: t.errorDeleting,
+        title: t.errorDeletingSubscription,
         description: error.message,
         variant: "destructive",
       });

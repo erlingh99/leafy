@@ -1,9 +1,9 @@
-import { Plus, Bell, BellOff, Moon, Sun } from "lucide-react";
+import { Plus, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { MobileMenu } from "@/components/MobileMenu";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Language } from "@/lib/translations";
+import { Language, Translations } from "@/lib/translations";
 import { Subscription } from "@/hooks/useSubscription";
 import { SubscriptionManager } from "@/components/SubscriptionManager";
 
@@ -17,7 +17,7 @@ interface HeaderProps {
   theme: string;
   onToggleTheme: () => void;
   onOpenAddDialog: () => void;
-  t: any;
+  t: Translations;
 }
 
 export const Header = ({
@@ -50,6 +50,7 @@ export const Header = ({
               onAddSubscription={onAddSubscription}
               onUpdateSubscription={onUpdateSubscription}
               onDeleteSubscription={onDeleteSubscription}
+              t={t}
             />
 
             {/* Desktop buttons */}
@@ -67,6 +68,7 @@ export const Header = ({
                 onAddSubscription={onAddSubscription}
                 onUpdateSubscription={onUpdateSubscription}
                 onDeleteSubscription={onDeleteSubscription}
+                t={t}
               />
             </div>
 

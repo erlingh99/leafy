@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "./useToast";
-import { Language } from "@/lib/translations";
+import { Translations } from "@/lib/translations";
 
 export interface Plant {
   id: string;
@@ -12,7 +12,7 @@ export interface Plant {
   image?: string;
 }
 
-export const usePlants = (language: Language, t: any) => {
+export const usePlants = (t: Translations) => {
   const { toast } = useToast();
   const [plants, setPlants] = useState<Plant[]>([]);
 
@@ -35,7 +35,7 @@ export const usePlants = (language: Language, t: any) => {
 
       const data = await response.json();
       setPlants(data || []);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: t.errorLoading,
         description: error.message,
@@ -94,7 +94,7 @@ export const usePlants = (language: Language, t: any) => {
       });
       loadPlants();
       return true;
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: t.errorAdding,
         description: error.message,
@@ -144,7 +144,7 @@ export const usePlants = (language: Language, t: any) => {
       });
       loadPlants();
       return true;
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: t.errorUpdating,
         description: error.message,
@@ -177,7 +177,7 @@ export const usePlants = (language: Language, t: any) => {
         description: t.plantWateredDescription(plant?.name || ""),
       });
       loadPlants();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: t.errorWatering,
         description: error.message,
@@ -206,7 +206,7 @@ export const usePlants = (language: Language, t: any) => {
         description: t.plantDeletedDescription(plant?.name || ""),
       });
       loadPlants();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: t.errorDeleting,
         description: error.message,

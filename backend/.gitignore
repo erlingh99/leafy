@@ -19,6 +19,9 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.mypy_cache
+.pytest_cache
+.ruff_cache
 
 # Virtual Environment
 .venv/
@@ -36,4 +39,7 @@ ENV/
 *.sqlite3
 
 # Logs
-*.log 
+*.log
+
+#env
+.env
