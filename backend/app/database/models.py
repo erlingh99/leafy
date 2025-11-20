@@ -4,11 +4,11 @@ SQLAlchemy models for the database
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, func, Text, Integer
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .setup import Base
-from ..models import Plant, Subscription
+from ..models import Plant, Species, Subscription, SpeciesDetailsResponse, SpeciesGuideData
 
 class PlantDB(Base):
     """Database model for plants"""
@@ -25,6 +25,9 @@ class PlantDB(Base):
     watering_interval: Mapped[int] = mapped_column(Integer())
     last_watered: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     image: Mapped[bytes] = mapped_column(Text())
+    perenual_species_id: Mapped[int | None] = mapped_column(
+        Integer(), ForeignKey("plant_species.perenual_id"), nullable=True
+    )
 
 
     @classmethod
@@ -38,7 +41,8 @@ class PlantDB(Base):
             species=plant.species,
             watering_interval=plant.watering_interval,
             last_watered=plant.last_watered,
-            image=plant.image
+            image=plant.image,
+            perenual_species_id=plant.perenual_species_id,
         )
     
     def to_model(self) -> Plant:
@@ -51,7 +55,41 @@ class PlantDB(Base):
             species=self.species,
             watering_interval=self.watering_interval,
             last_watered=self.last_watered,
-            image=self.image
+            image=self.image,
+            perenual_species_id=self.perenual_species_id,
+        )
+
+
+class SpeciesDB(Base):
+    """Database model for species information."""
+    __tablename__ = "plant_species"
+
+    perenual_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        onupdate=func.now()
+    )
+    details: Mapped[dict] = mapped_column(JSON()) #TODO not like this... or?
+    care_guides: Mapped[list] = mapped_column(JSON())
+
+    @classmethod
+    def from_model(cls, species: Species) -> "SpeciesDB":
+        return cls(
+            perenual_id=species.perenual_id,
+            created_at=species.created_at,
+            updated_at=species.updated_at,
+            details=species.details.model_dump(),
+            care_guides=[guide.model_dump() for guide in species.care_guides],
+        )
+
+    def to_model(self) -> Species:
+        return Species(
+            perenual_id=self.perenual_id,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            details=SpeciesDetailsResponse.model_validate(self.details),
+            care_guides=[SpeciesGuideData.model_validate(guide) for guide in self.care_guides],
         )
     
 class SubscriptionDB(Base):
