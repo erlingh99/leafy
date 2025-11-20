@@ -118,7 +118,7 @@ class SpeciesGuideResponse(BaseModel):
 class Species(BaseModel):
     perenual_id: int
     details: SpeciesDetailsResponse
-    care_guides: SpeciesListData | None = None
+    care_guides: SpeciesGuideData | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     

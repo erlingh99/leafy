@@ -89,7 +89,7 @@ class SpeciesDB(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
             details=SpeciesDetailsResponse.model_validate(self.details),
-            care_guides=SpeciesGuideData.model_validate(self.care_guides),
+            care_guides=SpeciesGuideData.model_validate(self.care_guides) if self.care_guides else None,
         )
     
 class SubscriptionDB(Base):
