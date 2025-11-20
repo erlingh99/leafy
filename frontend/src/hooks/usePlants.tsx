@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useToast } from "./useToast";
 import { Translations } from "@/lib/translations";
 
@@ -10,6 +10,113 @@ export interface Plant {
   watering_interval: number;
   last_watered: string;
   image?: string;
+  perenual_species_id?: number | null;
+}
+
+// Species interfaces
+export interface Dimension {
+  type?: string | null;
+  min_value?: number | null;
+  max_value?: number | null;
+  unit?: string | null;
+}
+
+export interface Hardiness {
+  min?: string | null;
+  max?: string | null;
+}
+
+export interface HardinessLocation {
+  full_url?: string | null;
+}
+
+export interface WateringGeneralBenchmark {
+  value?: string | null;
+  unit?: string | null;
+}
+
+export interface PlantAnatomyItem {
+  part?: string | null;
+  color?: string[] | null;
+}
+
+export interface PruningCount {
+  amount?: number | null;
+  interval?: string | null;
+}
+
+export interface SpeciesDetailsResponse {
+  id: number;
+  common_name?: string | null;
+  scientific_name?: string[] | null;
+  other_name?: string[] | null;
+  family?: string | null;
+  hybrid?: boolean | null;
+  authority?: string | null;
+  subspecies?: string | null;
+  cultivar?: string | null;
+  variety?: string | null;
+  species_epithet?: string | null;
+  genus?: string | null;
+  origin?: string[] | null;
+  type?: string | null;
+  dimensions?: Dimension[] | null;
+  cycle?: string | null;
+  attracts?: string[] | null;
+  propagation?: string[] | null;
+  hardiness?: Hardiness | null;
+  hardiness_location?: HardinessLocation | null;
+  watering?: string | null;
+  watering_general_benchmark?: WateringGeneralBenchmark | null;
+  plant_anatomy?: PlantAnatomyItem[] | null;
+  sunlight?: string[] | null;
+  pruning_month?: string[] | null;
+  pruning_count?: PruningCount | null;
+  seeds?: boolean | null;
+  maintenance?: string | null;
+  care_guides?: string | null;
+  soil?: string[] | null;
+  growth_rate?: string | null;
+  drought_tolerant?: boolean | null;
+  salt_tolerant?: boolean | null;
+  thorny?: boolean | null;
+  invasive?: boolean | null;
+  tropical?: boolean | null;
+  indoor?: boolean | null;
+  care_level?: string | null;
+  pest_susceptibility?: string[] | null;
+  flowers?: boolean | null;
+  flowering_season?: string | null;
+  cones?: boolean | null;
+  fruits?: boolean | null;
+  edible_fruit?: boolean | null;
+  harvest_season?: string | null;
+  leaf?: boolean | null;
+  edible_leaf?: boolean | null;
+  cuisine?: boolean | null;
+  medicinal?: boolean | null;
+  poisonous_to_humans?: boolean | null;
+  poisonous_to_pets?: boolean | null;
+  description?: string | null;
+}
+
+export interface GuideSection {
+  type?: string | null;
+  description?: string | null;
+}
+
+export interface SpeciesGuideData {
+  id?: number | null;
+  species_id?: number | null;
+  section?: GuideSection[];
+}
+
+export interface Species {
+  perenual_id: number;
+  details: SpeciesDetailsResponse;
+  care_guides?: SpeciesGuideData[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const usePlants = (t: Translations) => {
@@ -21,6 +128,11 @@ export const usePlants = (t: Translations) => {
   }, []);
 
   const loadPlants = async () => {
+    const loadingToast = toast({
+      title: t.loading || "Loading...",
+      description: t.loadingPlants || "Loading plants...",
+    });
+
     try {
       const response = await fetch(`/api/plants`, {
         method: 'GET',
@@ -35,10 +147,11 @@ export const usePlants = (t: Translations) => {
 
       const data = await response.json();
       setPlants(data || []);
+      loadingToast.dismiss();
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorLoading,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     }
@@ -69,6 +182,11 @@ export const usePlants = (t: Translations) => {
       return false;
     }
 
+    const loadingToast = toast({
+      title: t.loading || "Loading...",
+      description: t.addingPlant || "Adding plant...",
+    });
+
     try {
       const response = await fetch('/api/plants', {
         method: 'PUT',
@@ -88,16 +206,16 @@ export const usePlants = (t: Translations) => {
         throw new Error('Failed to add plant');
       }
 
-      toast({
+      loadingToast.update({
         title: t.plantAdded,
         description: t.plantAddedDescription(plantData.name),
       });
       loadPlants();
       return true;
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorAdding,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
       return false;
@@ -120,6 +238,11 @@ export const usePlants = (t: Translations) => {
       return false;
     }
 
+    const loadingToast = toast({
+      title: t.loading || "Loading...",
+      description: t.updatingPlant || "Updating plant...",
+    });
+
     try {
       const response = await fetch(`/api/plants/${plantId}`, {
         method: 'PATCH',
@@ -138,16 +261,16 @@ export const usePlants = (t: Translations) => {
         throw new Error('Failed to update plant');
       }
 
-      toast({
+      loadingToast.update({
         title: t.plantUpdated,
         description: t.plantUpdatedDescription(plantData.name),
       });
       loadPlants();
       return true;
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorUpdating,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
       return false;
@@ -156,6 +279,10 @@ export const usePlants = (t: Translations) => {
 
   const waterPlant = async (id: string) => {
     const plant = plants.find((p) => p.id === id);
+    const loadingToast = toast({
+      title: t.loading || "Loading...",
+      description: t.wateringPlant || "Watering plant...",
+    });
     
     try {
       const response = await fetch(`/api/plants/${id}`, {
@@ -172,15 +299,15 @@ export const usePlants = (t: Translations) => {
         throw new Error('Failed to water plant');
       }
 
-      toast({
+      loadingToast.update({
         title: t.plantWatered,
         description: t.plantWateredDescription(plant?.name || ""),
       });
       loadPlants();
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorWatering,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     }
@@ -188,6 +315,10 @@ export const usePlants = (t: Translations) => {
 
   const deletePlant = async (id: string) => {
     const plant = plants.find((p) => p.id === id);
+    const loadingToast = toast({
+      title: t.loading || "Loading...",
+      description: t.deletingPlant || "Deleting plant...",
+    });
     
     try {
       const response = await fetch(`/api/plants/${id}`, {
@@ -201,15 +332,15 @@ export const usePlants = (t: Translations) => {
         throw new Error('Failed to delete plant');
       }
 
-      toast({
+      loadingToast.update({
         title: t.plantDeleted,
         description: t.plantDeletedDescription(plant?.name || ""),
       });
       loadPlants();
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorDeleting,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     }
@@ -228,6 +359,41 @@ export const usePlants = (t: Translations) => {
     return diff;
   };
 
+  const fetchSpecies = useCallback(async (perenualId: number): Promise<Species | null> => {
+    const loadingToast = toast({
+      title: t.loading || "Loading...",
+      description: t.loadingSpecies || "Loading species information...",
+    });
+
+    try {
+      const response = await fetch(`/api/plants/species/${perenualId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          loadingToast.dismiss();
+          return null;
+        }
+        throw new Error('Failed to fetch species information');
+      }
+
+      const data = await response.json();
+      loadingToast.dismiss();
+      return data;
+    } catch (error) {
+      loadingToast.update({
+        title: t.errorLoadingSpecies || "Error loading species",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }, [toast, t]);
+
   return {
     plants,
     addPlant,
@@ -236,5 +402,6 @@ export const usePlants = (t: Translations) => {
     deletePlant,
     needsWater,
     getDaysUntilWatering,
+    fetchSpecies,
   };
 };

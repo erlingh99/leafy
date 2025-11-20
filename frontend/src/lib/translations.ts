@@ -64,7 +64,85 @@ type StaticTranslationKeys =
   | "subscriptionDelete"
   | "subscriptionClose"
   | "subscriptionSave"
-  | "menu";
+  | "menu"
+  | "showSpeciesInfo"
+  | "hideSpeciesInfo"
+  | "loadingSpecies"
+  | "speciesInfoNotAvailable"
+  | "errorLoadingSpecies"
+  | "speciesCommonName"
+  | "speciesScientificName"
+  | "speciesFamily"
+  | "speciesGenus"
+  | "speciesDescription"
+  | "speciesWatering"
+  | "speciesWateringBenchmark"
+  | "speciesSunlight"
+  | "speciesSoil"
+  | "speciesGrowthRate"
+  | "speciesCareLevel"
+  | "speciesHardiness"
+  | "speciesPropagation"
+  | "speciesCycle"
+  | "speciesOtherName"
+  | "speciesEpithet"
+  | "speciesSubspecies"
+  | "speciesAuthority"
+  | "speciesVariety"
+  | "speciesCultivar"
+  | "speciesType"
+  | "speciesOrigin"
+  | "speciesHybrid"
+  | "speciesMaintenance"
+  | "speciesDimensions"
+  | "speciesAttracts"
+  | "speciesPruningMonth"
+  | "speciesPruningCount"
+  | "speciesPestSusceptibility"
+  | "speciesFloweringSeason"
+  | "speciesHarvestSeason"
+  | "speciesPlantAnatomy"
+  | "speciesHardinessLocation"
+  | "speciesViewMap"
+  | "speciesSaltTolerant"
+  | "speciesNotSaltTolerant"
+  | "speciesTropical"
+  | "speciesNotTropical"
+  | "speciesEdibleFruit"
+  | "speciesNotEdibleFruit"
+  | "speciesEdibleLeaf"
+  | "speciesNotEdibleLeaf"
+  | "speciesCones"
+  | "speciesNoCones"
+  | "speciesSeeds"
+  | "speciesNoSeeds"
+  | "speciesThorny"
+  | "speciesNotThorny"
+  | "speciesInvasive"
+  | "speciesNotInvasive"
+  | "speciesCuisine"
+  | "speciesNoCuisine"
+  | "speciesLeaf"
+  | "speciesNoLeaf"
+  | "speciesDroughtTolerant"
+  | "speciesNotDroughtTolerant"
+  | "speciesIndoor"
+  | "speciesOutdoor"
+  | "speciesFlowers"
+  | "speciesFruits"
+  | "speciesMedicinal"
+  | "speciesPoisonousHumans"
+  | "speciesPoisonousPets"
+  | "speciesCareGuides"
+  | "loadingPlants"
+  | "addingPlant"
+  | "updatingPlant"
+  | "wateringPlant"
+  | "deletingPlant"
+  | "loadingSubscriptions"
+  | "addingSubscription"
+  | "updatingSubscription"
+  | "deletingSubscription";
 
 type FunctionTranslationKeys =
   | "plantAddedDescription"
@@ -159,6 +237,84 @@ export const translations: TranslationDictionary = {
     subscriptionClose: "Close",
     subscriptionSave: "Save",
     menu: "Menu",
+    showSpeciesInfo: "Show Species Information",
+    hideSpeciesInfo: "Hide Species Information",
+    loadingSpecies: "Loading species information...",
+    speciesInfoNotAvailable: "Species information not available",
+    errorLoadingSpecies: "Error loading species information",
+    speciesCommonName: "Common Name",
+    speciesScientificName: "Scientific Name",
+    speciesFamily: "Family",
+    speciesGenus: "Genus",
+    speciesDescription: "Description",
+    speciesWatering: "Watering",
+    speciesWateringBenchmark: "Watering Benchmark",
+    speciesSunlight: "Sunlight",
+    speciesSoil: "Soil",
+    speciesGrowthRate: "Growth Rate",
+    speciesCareLevel: "Care Level",
+    speciesHardiness: "Hardiness",
+    speciesPropagation: "Propagation",
+    speciesCycle: "Cycle",
+    speciesOtherName: "Other Names",
+    speciesEpithet: "Species Epithet",
+    speciesAuthority: "Authority",
+    speciesSubspecies: "Subspecies",
+    speciesVariety: "Variety",
+    speciesCultivar: "Cultivar",
+    speciesHybrid: "Hybrid",
+    speciesType: "Type",
+    speciesOrigin: "Origin",
+    speciesMaintenance: "Maintenance",
+    speciesDimensions: "Dimensions",
+    speciesAttracts: "Attracts",
+    speciesPruningMonth: "Pruning Month",
+    speciesPruningCount: "Pruning",
+    speciesPestSusceptibility: "Pest Susceptibility",
+    speciesFloweringSeason: "Flowering Season",
+    speciesHarvestSeason: "Harvest Season",
+    speciesPlantAnatomy: "Plant Anatomy",
+    speciesHardinessLocation: "Hardiness Location",
+    speciesViewMap: "View Map",
+    speciesDroughtTolerant: "Drought Tolerant",
+    speciesNotDroughtTolerant: "Not Drought Tolerant",
+    speciesSaltTolerant: "Salt Tolerant",
+    speciesNotSaltTolerant: "Not Salt Tolerant",
+    speciesTropical: "Tropical",
+    speciesNotTropical: "Not Tropical",
+    speciesIndoor: "Indoor",
+    speciesOutdoor: "Outdoor",
+    speciesFlowers: "Flowers",
+    speciesFruits: "Fruits",
+    speciesEdibleFruit: "Edible Fruit",
+    speciesNotEdibleFruit: "Not Edible Fruit",
+    speciesLeaf: "Has Leaves",
+    speciesNoLeaf: "No Leaves",
+    speciesEdibleLeaf: "Edible Leaf",
+    speciesNotEdibleLeaf: "Not Edible Leaf",
+    speciesCones: "Cones",
+    speciesNoCones: "No Cones",
+    speciesSeeds: "Seeds",
+    speciesNoSeeds: "No Seeds",
+    speciesThorny: "Thorny",
+    speciesNotThorny: "Not Thorny",
+    speciesInvasive: "Invasive",
+    speciesNotInvasive: "Not Invasive",
+    speciesMedicinal: "Medicinal",
+    speciesCuisine: "Culinary Use",
+    speciesNoCuisine: "No Culinary Use",
+    speciesPoisonousHumans: "Poisonous to Humans",
+    speciesPoisonousPets: "Poisonous to Pets",
+    speciesCareGuides: "Care Guides",
+    loadingPlants: "Loading plants...",
+    addingPlant: "Adding plant...",
+    updatingPlant: "Updating plant...",
+    wateringPlant: "Watering plant...",
+    deletingPlant: "Deleting plant...",
+    loadingSubscriptions: "Loading subscriptions...",
+    addingSubscription: "Adding subscription...",
+    updatingSubscription: "Updating subscription...",
+    deletingSubscription: "Deleting subscription...",
   },
   sv: {
     appTitle: "🌱 Växtskötsel Tracker",
@@ -233,5 +389,83 @@ export const translations: TranslationDictionary = {
     subscriptionClose: "Stäng",
     subscriptionSave: "Spara",
     menu: "Meny",
+    showSpeciesInfo: "Visa artinformation",
+    hideSpeciesInfo: "Dölj artinformation",
+    loadingSpecies: "Laddar artinformation...",
+    speciesInfoNotAvailable: "Artinformation är inte tillgänglig",
+    errorLoadingSpecies: "Fel vid laddning av artinformation",
+    speciesCommonName: "Vanligt namn",
+    speciesScientificName: "Vetenskapligt namn",
+    speciesFamily: "Familj",
+    speciesGenus: "Släkte",
+    speciesDescription: "Beskrivning",
+    speciesWatering: "Vattning",
+    speciesWateringBenchmark: "Vattningsmått",
+    speciesSunlight: "Solljus",
+    speciesSoil: "Jord",
+    speciesGrowthRate: "Tillväxthastighet",
+    speciesCareLevel: "Skötselnivå",
+    speciesHardiness: "Hårdhet",
+    speciesPropagation: "Förökning",
+    speciesCycle: "Cykel",
+    speciesOtherName: "Andra namn",
+    speciesEpithet: "Artepitet",
+    speciesAuthority: "Auktoritet",
+    speciesSubspecies: "Underart",
+    speciesVariety: "Varietet",
+    speciesCultivar: "Sort",
+    speciesHybrid: "Hybrid",
+    speciesType: "Typ",
+    speciesOrigin: "Ursprung",
+    speciesMaintenance: "Underhåll",
+    speciesDimensions: "Dimensioner",
+    speciesAttracts: "Lockar",
+    speciesPruningMonth: "Beskärningsmånad",
+    speciesPruningCount: "Beskärning",
+    speciesPestSusceptibility: "Skadegörare",
+    speciesFloweringSeason: "Blomningssäsong",
+    speciesHarvestSeason: "Skördesäsong",
+    speciesPlantAnatomy: "Växtanatomi",
+    speciesHardinessLocation: "Hårdhetszon",
+    speciesViewMap: "Visa karta",
+    speciesDroughtTolerant: "Torktålig",
+    speciesNotDroughtTolerant: "Inte torktålig",
+    speciesSaltTolerant: "Saltolerant",
+    speciesNotSaltTolerant: "Inte saltolerant",
+    speciesTropical: "Tropisk",
+    speciesNotTropical: "Inte tropisk",
+    speciesIndoor: "Inomhus",
+    speciesOutdoor: "Utomhus",
+    speciesFlowers: "Blommor",
+    speciesFruits: "Frukter",
+    speciesEdibleFruit: "Ätbar frukt",
+    speciesNotEdibleFruit: "Inte ätbar frukt",
+    speciesLeaf: "Har blad",
+    speciesNoLeaf: "Inga blad",
+    speciesEdibleLeaf: "Ätbar blad",
+    speciesNotEdibleLeaf: "Inte ätbar blad",
+    speciesCones: "Kottar",
+    speciesNoCones: "Inga kottar",
+    speciesSeeds: "Frön",
+    speciesNoSeeds: "Inga frön",
+    speciesThorny: "Taggig",
+    speciesNotThorny: "Inte taggig",
+    speciesInvasive: "Invasiv",
+    speciesNotInvasive: "Inte invasiv",
+    speciesMedicinal: "Medicinsk",
+    speciesCuisine: "Kulinarisk användning",
+    speciesNoCuisine: "Ingen kulinarisk användning",
+    speciesPoisonousHumans: "Giftig för människor",
+    speciesPoisonousPets: "Giftig för husdjur",
+    speciesCareGuides: "Skötselguider",
+    loadingPlants: "Laddar växter...",
+    addingPlant: "Lägger till växt...",
+    updatingPlant: "Uppdaterar växt...",
+    wateringPlant: "Vattnar växt...",
+    deletingPlant: "Tar bort växt...",
+    loadingSubscriptions: "Laddar prenumerationer...",
+    addingSubscription: "Lägger till prenumeration...",
+    updatingSubscription: "Uppdaterar prenumeration...",
+    deletingSubscription: "Tar bort prenumeration...",
   },
 };

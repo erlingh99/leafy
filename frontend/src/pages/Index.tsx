@@ -16,7 +16,7 @@ const Index = () => {
   const [language, setLanguage] = useState<Language>("en");
   const t = translations[language];
 
-  const { plants, addPlant, updatePlant, waterPlant, deletePlant, needsWater, getDaysUntilWatering } = usePlants(t);
+  const { plants, addPlant, updatePlant, waterPlant, deletePlant, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
 
   const openAddDialog = () => {
@@ -88,6 +88,7 @@ const Index = () => {
                 onWater={waterPlant}
                 onEdit={openEditDialog}
                 onDelete={deletePlant}
+                fetchSpecies={fetchSpecies}
                 t={t}
               />
             ))}
