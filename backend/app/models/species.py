@@ -39,69 +39,69 @@ class PruningCount(BaseModel):
 
 class SpeciesDetailsResponse(BaseModel):
     id: int
-    common_name: str | None
-    scientific_name: list[str] | None
-    other_name: list[str] | None
-    family: str | None
-    hybrid: bool | None
-    authority: str | None
-    subspecies: str | None
-    cultivar: str | None
-    variety: str | None
-    species_epithet: str | None
-    genus: str | None
-    origin: list[str] | None
-    type: str | None
-    dimensions: list[Dimension] | None
-    cycle: str | None
-    attracts: list[str] | None
-    propagation: list[str] | None
-    hardiness: Hardiness | None
-    hardiness_location: HardinessLocation | None
-    watering: str | None
-    watering_general_benchmark: WateringGeneralBenchmark | None
-    plant_anatomy: list[PlantAnatomyItem] | None
-    sunlight: list[str] | None
-    pruning_month: list[str] | None
-    pruning_count: PruningCount | None
-    seeds: bool | None
-    maintenance: str | None
-    care_guides: str | None
-    soil: list[str] | None
-    growth_rate: str | None
-    drought_tolerant: bool | None
-    salt_tolerant: bool | None
-    thorny: bool | None
-    invasive: bool | None
-    tropical: bool | None
-    indoor: bool | None
-    care_level: str | None
-    pest_susceptibility: list[str] | None
-    flowers: bool | None
-    flowering_season: str | None
-    cones: bool | None
-    fruits: bool | None
-    edible_fruit: bool | None
-    harvest_season: str | None
-    leaf: bool | None
-    edible_leaf: bool | None
-    cuisine: bool | None
-    medicinal: bool | None
-    poisonous_to_humans: bool | None
-    poisonous_to_pets: bool | None
-    description: str | None
+    common_name: str | None = None
+    scientific_name: list[str] | None = None
+    other_name: list[str] | None = None
+    family: str | None = None
+    hybrid: bool | None = None
+    authority: str | None = None
+    subspecies: str | None = None
+    cultivar: str | None = None
+    variety: str | None = None
+    species_epithet: str | None = None
+    genus: str | None = None
+    origin: list[str] | None = None
+    type: str | None = None
+    dimensions: list[Dimension] | None = None
+    cycle: str | None = None
+    attracts: list[str] | None = None
+    propagation: list[str] | None = None
+    hardiness: Hardiness | None = None
+    hardiness_location: HardinessLocation | None = None
+    watering: str | None = None
+    watering_general_benchmark: WateringGeneralBenchmark | None = None
+    plant_anatomy: list[PlantAnatomyItem] | None = None
+    sunlight: list[str] | None = None
+    pruning_month: list[str] | None = None
+    pruning_count: PruningCount | None = None
+    seeds: bool | None = None
+    maintenance: str | None = None
+    care_guides: str | None = None
+    soil: list[str] | None = None
+    growth_rate: str | None = None
+    drought_tolerant: bool | None = None
+    salt_tolerant: bool | None = None
+    thorny: bool | None = None
+    invasive: bool | None = None
+    tropical: bool | None = None
+    indoor: bool | None = None
+    care_level: str | None = None
+    pest_susceptibility: list[str] | None = None
+    flowers: bool | None = None
+    flowering_season: str | None = None
+    cones: bool | None = None
+    fruits: bool | None = None
+    edible_fruit: bool | None = None
+    harvest_season: str | None = None
+    leaf: bool | None = None
+    edible_leaf: bool | None = None
+    cuisine: bool | None = None
+    medicinal: bool | None = None
+    poisonous_to_humans: bool | None = None
+    poisonous_to_pets: bool | None = None
+    description: str | None = None
 
 
 ###SPECIES_GUIDE
 
 class GuideSection(BaseModel):
-    type: str | None
-    description: str | None
+    type: str | None = None
+    description: str | None = None
 
 class SpeciesGuideData(BaseModel):
-    id: int | None
-    species_id: int | None
-    section: list[GuideSection]
+    id: int | None = None
+    species_id: int | None = None
+    section: list[GuideSection] = Field(default_factory=list)
 
 class SpeciesGuideResponse(BaseModel):
     data: list[SpeciesGuideData]

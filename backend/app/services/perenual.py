@@ -2,7 +2,8 @@
 Integration helpers for the Perenual Plant Open API.
 """
 from typing import Any
-
+import logging
+from pydantic import ValidationError
 import requests
 from fastapi import HTTPException, status
 
@@ -17,6 +18,8 @@ from ..models import (
 
 PERENUAL_TIMEOUT = 20  # seconds
 
+logger = logging.getLogger('uvicorn.error')
+logger.setLevel(logging.DEBUG)
 
 class PerenualConfigurationError(RuntimeError):
     """Raised when the Perenual client is misconfigured."""
@@ -63,8 +66,16 @@ def _build_session() -> requests.Session:
 
 
 def _search_species(session: requests.Session, query: str) -> SpeciesListResponse:
+    logger.debug(f"Getting info about species {query}")
     payload = _request(session, "/species-list", params={"q": query})
-    response = SpeciesListResponse.model_validate(payload)
+    try:
+        response = SpeciesListResponse.model_validate(payload)
+    except ValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Bad species API response.",
+        )
+
     if not response.data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -94,19 +105,33 @@ def _select_lowest_id(candidates: list[Any]) -> int:
 
 
 def _fetch_details(session: requests.Session, species_id: int) -> SpeciesDetailsResponse:
+    logger.debug(f"Getting details for species {species_id}")
     payload = _request(session, f"/species/details/{species_id}")
-    return SpeciesDetailsResponse.model_validate(payload)
+    try:
+        return SpeciesDetailsResponse.model_validate(payload)
+    except ValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Bad species API response.",
+        )
 
 
 def _fetch_care_guides(
     session: requests.Session, species_id: int
 ) -> list[SpeciesGuideData]:
+    logger.debug(f"Getting care guide for id {species_id}")
     payload = _request(
         session,
         "/species-care-guide-list",
         params={"species_id": species_id},
     )
-    response = SpeciesGuideResponse.model_validate(payload)
+    try:
+        response = SpeciesGuideResponse.model_validate(payload)
+    except ValidationError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Bad species API response.",
+        )
     return response.data or []
 
 
@@ -133,4 +158,3 @@ def _request(
 
     json_payload: dict[str, Any] = response.json()
     return json_payload
-
