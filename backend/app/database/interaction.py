@@ -71,7 +71,7 @@ async def upsert_species(db: AsyncSession, species: Species) -> None:
     existing = await db.get(SpeciesDB, species.perenual_id)
     if existing:
         existing.details = species.details.model_dump()
-        existing.care_guides = [guide.model_dump() for guide in species.care_guides]
+        existing.care_guides = species.care_guides.model_dump() if species.care_guides else None
         existing.updated_at = species.updated_at
     else:
         db_species = SpeciesDB.from_model(species)

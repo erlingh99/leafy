@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plant, Species } from "@/hooks/usePlants";
 import { Translations } from "@/lib/translations";
 
@@ -28,6 +29,9 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
   const [isSpeciesOpen, setIsSpeciesOpen] = useState(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
+  const [hardinessMapUrl, setHardinessMapUrl] = useState<string | null>(null);
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
+  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
@@ -41,12 +45,32 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
     }
   }, [isSpeciesOpen, speciesData, isLoadingSpecies, plant.perenual_species_id, fetchSpecies]);
 
-  // Reset the ref when the collapsible is closed
+  // Reset the ref and map URL when the collapsible is closed
   useEffect(() => {
     if (!isSpeciesOpen) {
       hasFetchedRef.current = false;
+      setHardinessMapUrl(null);
+      setIsLoadingMap(false);
+      setIsMapDialogOpen(false);
     }
   }, [isSpeciesOpen]);
+
+  // Reset map URL when species data changes
+  useEffect(() => {
+    setHardinessMapUrl(null);
+    setIsLoadingMap(false);
+    setIsMapDialogOpen(false);
+  }, [speciesData]);
+
+  // Load map when dialog opens
+  useEffect(() => {
+    if (isMapDialogOpen && !hardinessMapUrl && !isLoadingMap && speciesData?.perenual_id) {
+      setIsLoadingMap(true);
+      const mapUrl = `/api/plants/species/${speciesData.perenual_id}/hardiness-map`;
+      setHardinessMapUrl(mapUrl);
+      setIsLoadingMap(false);
+    }
+  }, [isMapDialogOpen, hardinessMapUrl, isLoadingMap, speciesData]);
 
   const capitalizeFirst = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -371,18 +395,49 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                 </div>
               </div>
             )}
-            {details.hardiness_location && details.hardiness_location.full_url && (
+            {details.hardiness_location && details.hardiness_location.has_map && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 <span className="font-semibold">{t.speciesHardinessLocation || "Hardiness Location"}: </span>
-                <a 
-                  href={details.hardiness_location.full_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary underline hover:no-underline"
-                >
-                  {t.speciesViewMap || "View Map"}
-                </a>
+                <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-primary"
+                    >
+                      {t.speciesViewMap || "View Map"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {t.speciesHardinessLocation || "Hardiness Location Map"}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex items-center justify-center">
+                      {isLoadingMap ? (
+                        <div className="py-8 text-muted-foreground">
+                          {t.loading || "Loading..."}
+                        </div>
+                      ) : hardinessMapUrl ? (
+                        <img
+                          src={hardinessMapUrl}
+                          alt={t.speciesHardinessLocation || "Hardiness Location Map"}
+                          className="w-full h-auto rounded-lg"
+                          onError={() => {
+                            setHardinessMapUrl(null);
+                            setIsLoadingMap(false);
+                          }}
+                        />
+                      ) : (
+                        <div className="py-8 text-muted-foreground">
+                          {t.errorLoading || "Failed to load map"}
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </div>
@@ -494,31 +549,29 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
           </div>
 
           {/* Care Guides */}
-          {care_guides && care_guides.length > 0 && (
+          {care_guides && (
             <div className="pt-2 border-t border-border/50">
               <div className="flex items-center gap-2 mb-2">
                 <BookOpen className="h-4 w-4 text-primary flex-shrink-0" />
                 <span className="font-semibold">{t.speciesCareGuides || "Care Guides"}: </span>
               </div>
               <div className="space-y-3">
-                {care_guides.map((guide, idx) => (
-                  <div key={idx} className="pl-4 border-l-2 border-primary/20">
-                    {guide.section && guide.section.map((section, sectionIdx) => (
-                      <div key={sectionIdx} className="mb-3">
-                        {section.type && (
-                          <div className="font-medium text-base mb-1">
-                            {section.type.split(' ').map(word => capitalizeFirst(word)).join(' ')}
-                          </div>
-                        )}
-                        {section.description && (
-                          <div className="text-muted-foreground">
-                            <LongTextDisplay text={section.description} maxLength={100} />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                <div key={1} className="pl-4 border-l-2 border-primary/20">
+                  {care_guides.section && care_guides.section.map((section, sectionIdx) => (
+                    <div key={sectionIdx} className="mb-3">
+                      {section.type && (
+                        <div className="font-medium text-base mb-1">
+                          {section.type.split(' ').map(word => capitalizeFirst(word)).join(' ')}
+                        </div>
+                      )}
+                      {section.description && (
+                        <div className="text-muted-foreground">
+                          <LongTextDisplay text={section.description} maxLength={100} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

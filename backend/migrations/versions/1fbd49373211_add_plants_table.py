@@ -20,9 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Check if table exists (for existing databases)
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
 
     op.create_table(
         'plants',

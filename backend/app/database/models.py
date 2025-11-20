@@ -71,7 +71,7 @@ class SpeciesDB(Base):
         onupdate=func.now()
     )
     details: Mapped[dict] = mapped_column(JSON()) #TODO not like this... or?
-    care_guides: Mapped[list] = mapped_column(JSON())
+    care_guides: Mapped[dict] = mapped_column(JSON())
 
     @classmethod
     def from_model(cls, species: Species) -> "SpeciesDB":
@@ -80,7 +80,7 @@ class SpeciesDB(Base):
             created_at=species.created_at,
             updated_at=species.updated_at,
             details=species.details.model_dump(),
-            care_guides=[guide.model_dump() for guide in species.care_guides],
+            care_guides=species.care_guides.model_dump() if species.care_guides else None,
         )
 
     def to_model(self) -> Species:
@@ -89,7 +89,7 @@ class SpeciesDB(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
             details=SpeciesDetailsResponse.model_validate(self.details),
-            care_guides=[SpeciesGuideData.model_validate(guide) for guide in self.care_guides],
+            care_guides=SpeciesGuideData.model_validate(self.care_guides),
         )
     
 class SubscriptionDB(Base):

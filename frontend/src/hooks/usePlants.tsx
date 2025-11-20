@@ -27,7 +27,7 @@ export interface Hardiness {
 }
 
 export interface HardinessLocation {
-  full_url?: string | null;
+  has_map?: boolean;
 }
 
 export interface WateringGeneralBenchmark {
@@ -46,7 +46,6 @@ export interface PruningCount {
 }
 
 export interface SpeciesDetailsResponse {
-  id: number;
   common_name?: string | null;
   scientific_name?: string[] | null;
   other_name?: string[] | null;
@@ -106,15 +105,13 @@ export interface GuideSection {
 }
 
 export interface SpeciesGuideData {
-  id?: number | null;
-  species_id?: number | null;
   section?: GuideSection[];
 }
 
 export interface Species {
   perenual_id: number;
   details: SpeciesDetailsResponse;
-  care_guides?: SpeciesGuideData[];
+  care_guides?: SpeciesGuideData;
   created_at?: string;
   updated_at?: string;
 }

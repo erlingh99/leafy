@@ -6,6 +6,17 @@ from pydantic import BaseModel, Field
 
 class SpeciesListData(BaseModel):
     id: int #there are other fields, but this is all we care about
+    common_name: str | None = None
+    scientific_name: list[str] | None = None
+    other_name: list[str] | None = None
+    family: str | None = None
+    hybrid: bool | None = None
+    authority: str | None = None
+    subspecies: str | None = None
+    cultivar: str | None = None
+    variety: str | None = None
+    species_epithet: str | None = None
+    genus: str | None = None
 
 class SpeciesListResponse(BaseModel):
     data: list[SpeciesListData]
@@ -23,7 +34,7 @@ class Hardiness(BaseModel):
     max: str | None
 
 class HardinessLocation(BaseModel):
-    full_url: str | None #TODO not save this but provide a button on ui to fetch and display
+    has_map: bool = False  # Whether a hardiness map is available for this species
 
 class WateringGeneralBenchmark(BaseModel):
     value: str | None
@@ -38,13 +49,13 @@ class PruningCount(BaseModel):
     interval: str | None
 
 class SpeciesDetailsResponse(BaseModel):
-    id: int
     common_name: str | None = None
     scientific_name: list[str] | None = None
     other_name: list[str] | None = None
     family: str | None = None
     hybrid: bool | None = None
     authority: str | None = None
+    species_id: int | None = None
     subspecies: str | None = None
     cultivar: str | None = None
     variety: str | None = None
@@ -99,21 +110,15 @@ class GuideSection(BaseModel):
     description: str | None = None
 
 class SpeciesGuideData(BaseModel):
-    id: int | None = None
-    species_id: int | None = None
     section: list[GuideSection] = Field(default_factory=list)
 
 class SpeciesGuideResponse(BaseModel):
     data: list[SpeciesGuideData]
 
-
 class Species(BaseModel):
     perenual_id: int
     details: SpeciesDetailsResponse
-    care_guides: list[SpeciesGuideData] = Field(default_factory=list)
+    care_guides: SpeciesListData | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-
-class SpeciesUpdate(BaseModel):
-    details: SpeciesDetailsResponse
-    care_guides: list[SpeciesGuideData] = Field(default_factory=list)
+    
