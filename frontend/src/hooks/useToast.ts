@@ -6,7 +6,7 @@ const TOAST_LIMIT = 3;
 const TOAST_REMOVE_DELAY = 1000;
 
 type ToasterToast = ToastProps & {
-  id: string;
+  id?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
@@ -181,4 +181,46 @@ function useToast() {
   };
 }
 
-export { useToast, toast };
+/**
+ * Creates a loading toast that only appears after a delay.
+ * If the operation completes before the delay, no toast is shown.
+ * @param options Toast options (title, description, etc.)
+ * @param delayMs Delay in milliseconds before showing the toast (default: 500ms)
+ * @returns Object with dismiss and update methods, same as regular toast
+ */
+function delayedToast(options: Toast, delayMs: number = 500) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let toastInstance: ReturnType<typeof toast> | null = null;
+  let isDismissed = false;
+
+  timeoutId = setTimeout(() => {
+    if (!isDismissed) {
+      toastInstance = toast(options);
+    }
+  }, delayMs);
+
+  return {
+    dismiss: () => {
+      isDismissed = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (toastInstance) {
+        toastInstance.dismiss();
+      }
+    },
+    update: (props: ToasterToast) => {
+      if (toastInstance) {
+        toastInstance.update(props);
+      } else if (!isDismissed) {
+        // If update is called before the toast appears, cancel the delay and show it immediately
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        toastInstance = toast({ ...options, ...props });
+      }
+    },
+  };
+}
+
+export { useToast, toast, delayedToast };

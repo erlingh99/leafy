@@ -17,6 +17,8 @@ dependencies = [
     "apscheduler>=3.11.1",
     "dotenv>=0.9.9",
     "brevo-python>=1.2.0",
+    "pillow>=11.0.0",
+    "requests>=2.32.5",
 ]
 
 [build-system]

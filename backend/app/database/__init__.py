@@ -1,5 +1,40 @@
-from .interaction import delete_plant, save_plant, load_plants, update_plant, delete_subscription, save_subscription, update_subscription, load_subscriptions
-from .setup import get_db, init_db, Base
-from .models import PlantDB, SubscriptionDB
+from .interaction import (
+    delete_plant,
+    delete_subscription,
+    get_plant,
+    get_species,
+    load_plants,
+    load_subscriptions,
+    save_plant,
+    save_subscription,
+    update_plant,
+    update_subscription,
+    upsert_species,
+    get_hardiness_map,
+    save_hardiness_map,
+)
+from .models import PlantDB, SpeciesDB, SubscriptionDB, HardinessMapDB
+from .setup import Base, get_db, init_db
 
-__all__ = ["get_db", "init_db", "Base", "PlantDB", "SubscriptionDB", "load_plants", "save_plant", "delete_plant", "update_plant", "delete_subscription", "save_subscription", "update_subscription", "load_subscriptions"] 
+__all__ = [
+    "get_db",
+    "init_db",
+    "Base",
+    "PlantDB",
+    "SpeciesDB",
+    "SubscriptionDB",
+    "HardinessMapDB",
+    "load_plants",
+    "save_plant",
+    "delete_plant",
+    "update_plant",
+    "delete_subscription",
+    "save_subscription",
+    "update_subscription",
+    "load_subscriptions",
+    "get_plant",
+    "get_species",
+    "upsert_species",
+    "get_hardiness_map",
+    "save_hardiness_map",
+]
