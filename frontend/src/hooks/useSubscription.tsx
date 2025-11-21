@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useToast } from "./useToast";
+import { useToast, delayedToast } from "./useToast";
 import { Translations } from "@/lib/translations";
 
 export interface Subscription {
@@ -18,6 +18,11 @@ export const useSubscription = (t: Translations) => {
   }, []);
 
   const loadSubscriptions = async () => {
+    const loadingToast = delayedToast({
+      title: t.loading || "Loading...",
+      description: t.loadingSubscriptions || "Loading subscriptions...",
+    });
+
     try {
       const response = await fetch(`/api/subscriptions`, {
         method: 'GET',
@@ -29,6 +34,7 @@ export const useSubscription = (t: Translations) => {
       if (!response.ok) {
         if (response.status === 404) {
           setSubscriptions([]);
+          loadingToast.dismiss();
           return;
         }
         throw new Error('Failed to fetch subscriptions');
@@ -36,12 +42,13 @@ export const useSubscription = (t: Translations) => {
 
       const data = await response.json();
       setSubscriptions(data || []);
+      loadingToast.dismiss();
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorLoadingSubscription,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
-      })
+      });
     }
   };
 
@@ -54,6 +61,11 @@ export const useSubscription = (t: Translations) => {
       });
       return false;
     }
+
+    const loadingToast = delayedToast({
+      title: t.loading || "Loading...",
+      description: t.addingSubscription || "Adding subscription...",
+    });
 
     try {
       const response = await fetch('/api/subscriptions', {
@@ -71,16 +83,16 @@ export const useSubscription = (t: Translations) => {
         throw new Error('Failed to add subscription');
       }
 
-      toast({
-        title: t.subscriptionAdded, //TODO
-        description: t.subscriptionAddedDescription(subscriptionData.name), //TODO
+      loadingToast.update({
+        title: t.subscriptionAdded,
+        description: t.subscriptionAddedDescription(subscriptionData.name || ""),
       });
       loadSubscriptions();
       return true;
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorAddingSubscription,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
       return false;
@@ -91,6 +103,10 @@ export const useSubscription = (t: Translations) => {
     id: string,
     subscription: Partial<Subscription>
   ): Promise<boolean> => {
+    const loadingToast = delayedToast({
+      title: t.loading || "Loading...",
+      description: t.updatingSubscription || "Updating subscription...",
+    });
 
     try {
       const response = await fetch(`/api/subscriptions/${id}`, {
@@ -105,16 +121,16 @@ export const useSubscription = (t: Translations) => {
         throw new Error('Failed to update subscription');
       }
 
-      toast({
-        title: t.subscriptionUpdated, //TODO
+      loadingToast.update({
+        title: t.subscriptionUpdated,
         description: t.subscriptionUpdatedDescription(subscription?.name || ""),
       });
       loadSubscriptions();
       return true;
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorUpdatingSubscription,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
       return false;
@@ -123,6 +139,10 @@ export const useSubscription = (t: Translations) => {
 
   const deleteSubscription = async (id: string) => {
     const subscription = subscriptions.find((s) => s.id === id);
+    const loadingToast = delayedToast({
+      title: t.loading || "Loading...",
+      description: t.deletingSubscription || "Deleting subscription...",
+    });
     
     try {
       const response = await fetch(`/api/subscriptions/${id}`, {
@@ -136,15 +156,15 @@ export const useSubscription = (t: Translations) => {
         throw new Error('Failed to delete subscription');
       }
 
-      toast({
-        title: t.subscriptionDeleted, //TODO
-        description: t.subscriptionDeletedDescription(subscription?.name || ""), //TODO translations
+      loadingToast.update({
+        title: t.subscriptionDeleted,
+        description: t.subscriptionDeletedDescription(subscription?.name || ""),
       });
       loadSubscriptions();
     } catch (error) {
-      toast({
+      loadingToast.update({
         title: t.errorDeletingSubscription,
-        description: error.message,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     }

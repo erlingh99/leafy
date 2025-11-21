@@ -1,16 +1,18 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.gzip import GZipMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
-from dotenv import load_dotenv
 
-import os
 import logging
 from contextlib import asynccontextmanager
 from .routes import plant_api, subscription_api
-from .database import init_db
+from .database import init_db, save_hardiness_map, get_db, get_hardiness_map
 from .subscription import send_email
+from .config import BREVO_API_KEY
+from .services import get_hardiness_base_maps
+from .models import HardinessMap
 
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.DEBUG)
@@ -18,16 +20,26 @@ logger.setLevel(logging.DEBUG)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.debug("Initializing...")
-    load_dotenv()
-    API_KEY = os.getenv("BREVO_API_KEY")
     await init_db()
-    if (API_KEY):
+    API_KEY = BREVO_API_KEY or ""
+    if (API_KEY != ""):
         scheduler = BackgroundScheduler()
         scheduler.add_job(lambda: send_email(API_KEY), "cron", hour=12, minute=0)
         scheduler.start()
         logger.debug("Email reminders activated")
     else:
         logger.debug("No API key found, skipping email")
+
+    async with get_db() as db:
+        map = await get_hardiness_map(db ,0)
+
+    if map is None:
+        logger.debug("Maps not found in database. Fetching...")
+        basemaps = await run_in_threadpool(get_hardiness_base_maps)
+        async with get_db() as db:
+            for idx, map in basemaps:
+                await save_hardiness_map(db, hardiness_map=HardinessMap(id=idx, image=map))
+
     logger.debug("Initialized")
     yield
 

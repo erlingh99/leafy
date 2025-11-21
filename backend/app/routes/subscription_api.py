@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+import os
+
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from typing import List
 from uuid import UUID
 from datetime import datetime
@@ -7,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Subscription, SubscriptionUpdate
 from ..database import get_db, load_subscriptions, save_subscription, delete_subscription as db_delete_subscription, update_subscription as db_update_subscription
+from ..subscription import send_welcome_email
 
 subscription_router = APIRouter(prefix="/api/subscriptions", tags=["subscriptions"])
 
@@ -31,9 +34,14 @@ async def delete_subscription(subscription_id: UUID, db_context: AsyncSession = 
     return {"message": "Subscription deleted successfully"}
 
 @subscription_router.put("")
-async def set_subscription(subscription: Subscription, db_context: AsyncSession = Depends(get_db)):
+async def set_subscription(
+    subscription: Subscription,
+    background_tasks: BackgroundTasks,
+    db_context: AsyncSession = Depends(get_db)
+):
     async with db_context as db:
         await save_subscription(db, subscription)
+    background_tasks.add_task(send_welcome_email, subscription, os.getenv("BREVO_API_KEY"))
     return {"message" : "Subscriptioned saved succesfully"}
 
 @subscription_router.patch("/{subscription_id}")

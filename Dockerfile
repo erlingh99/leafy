@@ -6,13 +6,10 @@ COPY ./frontend/ .
 RUN npm install && npm run build
 
 # Build backend
-FROM python:3.13-alpine AS backend-builder
+FROM ghcr.io/astral-sh/uv:python3.11-alpine AS backend-builder
 WORKDIR /app
-RUN python -m venv /venv
-ENV PATH="/venv/bin:$PATH"
-COPY ./backend/requirements.txt .
-RUN python -m pip install -U pip && \
-    python -m pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN uv sync
 
 # Final stage
 FROM python:3.13-alpine AS prod

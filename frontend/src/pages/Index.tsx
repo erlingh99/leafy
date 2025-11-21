@@ -16,7 +16,7 @@ const Index = () => {
   const [language, setLanguage] = useState<Language>("en");
   const t = translations[language];
 
-  const { plants, addPlant, updatePlant, waterPlant, deletePlant, needsWater, getDaysUntilWatering } = usePlants(t);
+  const { plants, addPlant, updatePlant, waterPlant, deletePlant, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
 
   const openAddDialog = () => {
@@ -78,7 +78,7 @@ const Index = () => {
         {plants.length === 0 ? (
           <EmptyPlantState onAddPlant={openAddDialog} t={t} />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {plants.map((plant) => (
               <PlantCard
                 key={plant.id}
@@ -88,6 +88,7 @@ const Index = () => {
                 onWater={waterPlant}
                 onEdit={openEditDialog}
                 onDelete={deletePlant}
+                fetchSpecies={fetchSpecies}
                 t={t}
               />
             ))}

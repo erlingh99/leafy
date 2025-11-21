@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import timedelta, datetime
 
 from brevo_python import Configuration, ApiClient, TransactionalEmailsApi, SendSmtpEmail
@@ -8,6 +9,7 @@ from ..database import load_subscriptions, load_plants, get_db
 from ..models import Plant, Subscription
 
 logger = logging.getLogger('uvicorn.error')
+logger.setLevel(logging.DEBUG)
 
 async def send_email(API_KEY: str):
     logger.debug("Running daily email job...")
@@ -50,3 +52,35 @@ async def send_email(API_KEY: str):
         logger.debug(f"Email sent! {result}")
     except ApiException as e:
         logger.debug("Brevo API error:", e)
+
+
+def send_welcome_email(subscription: Subscription, api_key: str | None = None) -> None:
+    """
+    Send a welcome email to a new subscriber.
+    """
+    api_key = api_key or os.getenv("BREVO_API_KEY")
+    if not api_key:
+        logger.debug("No API key configured, skipping welcome email for %s", subscription.email)
+        return
+
+    configuration = Configuration()
+    configuration.api_key['api-key'] = api_key
+    api_instance = TransactionalEmailsApi(ApiClient(configuration))
+
+    email = SendSmtpEmail(
+        to=[{"email": subscription.email, "name": subscription.name}],
+        sender={"email": "REDACTED", "name": "Leafy App"},
+        subject="Welcome to Leafy 🌱",
+        text_content=(
+            f"Hi {subscription.name or 'there'},\n\n"
+            "Thanks for subscribing to Leafy! We will keep you posted with helpful\n"
+            "tips and reminders so your plants stay happy and hydrated.\n\n"
+            "Happy growing!"
+        )
+    )
+
+    try:
+        result = api_instance.send_transac_email(email)
+        logger.debug("Welcome email sent to %s (%s)", subscription.name, result)
+    except ApiException as exc:
+        logger.exception("Failed to send welcome email to %s: %s", subscription.email, exc)
