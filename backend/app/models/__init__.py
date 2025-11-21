@@ -1,7 +1,6 @@
 from .plant import Plant, PlantUpdate
 from .subscription import Subscription, SubscriptionUpdate
-from .species import Species, SpeciesListResponse, SpeciesGuideResponse, SpeciesDetailsResponse, SpeciesGuideData, SpeciesListData
-
+from .species import Species, SpeciesListResponse, SpeciesGuideResponse, SpeciesDetailsResponse, SpeciesGuideData, SpeciesListData, HardinessMap
 __all__ = [
     "Plant",
     "PlantUpdate",
@@ -13,4 +12,5 @@ __all__ = [
     "SpeciesDetailsResponse",
     "SpeciesGuideData",
     "SpeciesListData",
+    "HardinessMap",
 ]

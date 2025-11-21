@@ -33,9 +33,6 @@ class Hardiness(BaseModel):
     min: str | None
     max: str | None
 
-class HardinessLocation(BaseModel):
-    has_map: bool = False  # Whether a hardiness map is available for this species
-
 class WateringGeneralBenchmark(BaseModel):
     value: str | None
     unit: str | None
@@ -68,7 +65,6 @@ class SpeciesDetailsResponse(BaseModel):
     attracts: list[str] | None = None
     propagation: list[str] | None = None
     hardiness: Hardiness | None = None
-    hardiness_location: HardinessLocation | None = None
     watering: str | None = None
     watering_general_benchmark: WateringGeneralBenchmark | None = None
     plant_anatomy: list[PlantAnatomyItem] | None = None
@@ -122,3 +118,8 @@ class Species(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     
+class HardinessMap(BaseModel):
+    id: int
+    image: bytes
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)

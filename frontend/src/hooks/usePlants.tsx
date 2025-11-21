@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useToast } from "./useToast";
+import { useToast, delayedToast } from "./useToast";
 import { Translations } from "@/lib/translations";
 
 export interface Plant {
@@ -24,10 +24,6 @@ export interface Dimension {
 export interface Hardiness {
   min?: string | null;
   max?: string | null;
-}
-
-export interface HardinessLocation {
-  has_map?: boolean;
 }
 
 export interface WateringGeneralBenchmark {
@@ -64,7 +60,6 @@ export interface SpeciesDetailsResponse {
   attracts?: string[] | null;
   propagation?: string[] | null;
   hardiness?: Hardiness | null;
-  hardiness_location?: HardinessLocation | null;
   watering?: string | null;
   watering_general_benchmark?: WateringGeneralBenchmark | null;
   plant_anatomy?: PlantAnatomyItem[] | null;
@@ -125,7 +120,7 @@ export const usePlants = (t: Translations) => {
   }, []);
 
   const loadPlants = async () => {
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.loadingPlants || "Loading plants...",
     });
@@ -179,7 +174,7 @@ export const usePlants = (t: Translations) => {
       return false;
     }
 
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.addingPlant || "Adding plant...",
     });
@@ -235,7 +230,7 @@ export const usePlants = (t: Translations) => {
       return false;
     }
 
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.updatingPlant || "Updating plant...",
     });
@@ -276,7 +271,7 @@ export const usePlants = (t: Translations) => {
 
   const waterPlant = async (id: string) => {
     const plant = plants.find((p) => p.id === id);
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.wateringPlant || "Watering plant...",
     });
@@ -312,7 +307,7 @@ export const usePlants = (t: Translations) => {
 
   const deletePlant = async (id: string) => {
     const plant = plants.find((p) => p.id === id);
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.deletingPlant || "Deleting plant...",
     });
@@ -357,7 +352,7 @@ export const usePlants = (t: Translations) => {
   };
 
   const fetchSpecies = useCallback(async (perenualId: number): Promise<Species | null> => {
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.loadingSpecies || "Loading species information...",
     });

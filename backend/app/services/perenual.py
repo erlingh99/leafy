@@ -3,10 +3,11 @@ Integration helpers for the Perenual Plant Open API.
 """
 from typing import Any
 import logging
-import json
+from PIL import Image
 from pydantic import ValidationError
 import requests
-from fastapi import HTTPException, status
+from fastapi import status
+from io import BytesIO
 
 from ..config import PERENUAL_API_KEY, PERENUAL_BASE_URL
 from ..models import (
@@ -16,6 +17,7 @@ from ..models import (
     SpeciesGuideResponse,
     SpeciesListResponse,
     SpeciesListData,
+    HardinessMap,
 )
 
 PERENUAL_TIMEOUT = 20  # seconds
@@ -38,10 +40,7 @@ def get_perenual_species_id(species_query: str) -> SpeciesListData:
     Returns the species ID.
     """
     if not species_query:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Species query must be provided to enrich plant data.",
-        )
+        raise ValueError("Species query must be provided to enrich plant data.")
 
     with _build_session() as session:
         species_candidates = _search_species(session, species_query)
@@ -114,16 +113,10 @@ def _search_species(session: requests.Session, query: str) -> SpeciesListRespons
     try:
         response = SpeciesListResponse.model_validate(payload)
     except ValidationError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bad species API response.",
-        )
+        raise ValueError("Bad species list API response")
 
     if not response.data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No species found for query '{query}'.",
-        )
+        raise ValueError(f"No species found for query '{query}'.")
     return response
 
 
@@ -140,29 +133,17 @@ def _select_lowest_id(candidates: list[SpeciesListData]) -> SpeciesListData:
     )
 
     if candidate_id == float("inf"):
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Perenual API returned species without identifiers.",
-        )
+        raise ValueError("Perenual API returned species without identifiers.")
     return candidate
 
 
 def _fetch_details(session: requests.Session, species_id: int) -> SpeciesDetailsResponse:
     logger.debug(f"Getting details for species {species_id}")
     payload = _request(session, f"/v2/species/details/{species_id}")
-    try:
-        # Sanitize hardiness_location before validation
-        if "hardiness_location" in payload and payload["hardiness_location"] is not None:
-            hardiness_location = payload["hardiness_location"]
-            has_map = hardiness_location.get("full_url") is not None
-            payload["hardiness_location"] = {"has_map": has_map}
-        
+    try:        
         return SpeciesDetailsResponse.model_validate(payload)
     except ValidationError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bad species API response.",
-        )
+        raise ValueError("Bad species details API response")
 
 
 def _fetch_care_guides(
@@ -177,44 +158,47 @@ def _fetch_care_guides(
     try:
         response = SpeciesGuideResponse.model_validate(payload)
     except ValidationError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Bad species API response.",
-        )
+        raise ValueError("Bad species care guide API response")
     return response.data or []
 
 
-def fetch_hardiness_map(species_id: int) -> bytes:
+def create_hardiness_map(hardiness_maps: list[HardinessMap]) -> Image.Image:
     """
-    Fetch the hardiness map image for a species.
+    Create a hardiness map from a list of hardiness maps.
     
     Args:
-        species_id: The Perenual species ID
-        size: Map size (default: "og" for original size)
+        hardiness_maps: The list of hardiness maps
     
     Returns:
-        The image bytes
+        The hardiness map image
     """
-    with _build_session() as session:
-        params = {
-            "species_id": species_id,
-            "key": PERENUAL_API_KEY,
-        }
-        
-        url = f"{PERENUAL_BASE_URL.rstrip('/')}/api/hardiness-map"
-        
+    logger.debug(f"Stitching together {len(hardiness_maps)} maps")
+    hardiness_maps.sort(key=lambda x: x.id)
+    base = Image.open(BytesIO(hardiness_maps[0].image)).convert("RGBA")
+    canvas = Image.new("RGBA", base.size)
+    canvas.paste(base, (0, 0))
+    for hardiness_map in hardiness_maps[1:]:
+        with Image.open(BytesIO(hardiness_map.image)).convert("RGBA") as im:
+            r, g, b, a = im.split()
+            a = a.point(lambda p: int(p*0.8))
+            img = Image.merge("RGBA", (r, g, b, a))
+            canvas.alpha_composite(img)
+    return canvas
+
+
+def get_hardiness_base_maps() -> list[tuple[int, bytes]]:
+    base_maps = []
+    for i in range(0, 14):
+        url = f"{PERENUAL_BASE_URL.rstrip('/api/')}/storage/image/hardiness/lg/{i}.png"
         try:
-            response = session.get(url, params=params, timeout=PERENUAL_TIMEOUT)
+            response = requests.get(url, timeout=PERENUAL_TIMEOUT)
             response.raise_for_status()
-        except requests.RequestException as exc:
-            response_obj = getattr(exc, "response", None)
-            status_code = response_obj.status_code if response_obj is not None else status.HTTP_502_BAD_GATEWAY
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Perenual API call to hardiness-map failed with status {status_code}.",
-            ) from exc
-        
-        return response.content
+        except Exception as exc:
+            raise ValueError(f"Perenual API call to get hardiness-map base map {i} failed.") from exc
+
+        response_bytes = response.content
+        base_maps.append((i, response_bytes))
+    return base_maps
 
 
 def _request(
@@ -233,10 +217,6 @@ def _request(
     except requests.RequestException as exc:
         response_obj = getattr(exc, "response", None)
         status_code = response_obj.status_code if response_obj is not None else status.HTTP_502_BAD_GATEWAY
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Perenual API call to {path} failed with status {status_code}.",
-        ) from exc
+        raise ValueError(f"Perenual API call to {path} failed with status {status_code}.") from exc
 
-    json_payload: dict[str, Any] = response.json()
-    return json_payload
+    return response.json()

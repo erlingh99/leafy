@@ -33,6 +33,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
   const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const hasFetchedRef = useRef(false);
+  const hasLoadedMapRef = useRef(false);
 
   useEffect(() => {
     if (isSpeciesOpen && !speciesData && !isLoadingSpecies && !hasFetchedRef.current && plant.perenual_species_id) {
@@ -52,6 +53,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
       setHardinessMapUrl(null);
       setIsLoadingMap(false);
       setIsMapDialogOpen(false);
+      hasLoadedMapRef.current = false;
     }
   }, [isSpeciesOpen]);
 
@@ -60,17 +62,26 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
     setHardinessMapUrl(null);
     setIsLoadingMap(false);
     setIsMapDialogOpen(false);
-  }, [speciesData]);
+    hasLoadedMapRef.current = false;
+  }, [speciesData?.perenual_id]);
+
+  // Reset map ref when dialog closes
+  useEffect(() => {
+    if (!isMapDialogOpen) {
+      hasLoadedMapRef.current = false;
+    }
+  }, [isMapDialogOpen]);
 
   // Load map when dialog opens
   useEffect(() => {
-    if (isMapDialogOpen && !hardinessMapUrl && !isLoadingMap && speciesData?.perenual_id) {
+    if (isMapDialogOpen && !hardinessMapUrl && !isLoadingMap && speciesData?.perenual_id && !hasLoadedMapRef.current) {
+      hasLoadedMapRef.current = true;
       setIsLoadingMap(true);
       const mapUrl = `/api/plants/species/${speciesData.perenual_id}/hardiness-map`;
       setHardinessMapUrl(mapUrl);
-      setIsLoadingMap(false);
+      // Keep isLoadingMap as true - it will be set to false by onLoad or onError handlers
     }
-  }, [isMapDialogOpen, hardinessMapUrl, isLoadingMap, speciesData]);
+  }, [isMapDialogOpen, speciesData?.perenual_id]);
 
   const capitalizeFirst = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -395,7 +406,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                 </div>
               </div>
             )}
-            {details.hardiness_location && details.hardiness_location.has_map && (
+            {details.hardiness && details.hardiness.min && details.hardiness.max && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 <span className="font-semibold">{t.speciesHardinessLocation || "Hardiness Location"}: </span>
@@ -415,24 +426,32 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                         {t.speciesHardinessLocation || "Hardiness Location Map"}
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="flex items-center justify-center">
-                      {isLoadingMap ? (
-                        <div className="py-8 text-muted-foreground">
-                          {t.loading || "Loading..."}
-                        </div>
-                      ) : hardinessMapUrl ? (
-                        <img
-                          src={hardinessMapUrl}
-                          alt={t.speciesHardinessLocation || "Hardiness Location Map"}
-                          className="w-full h-auto rounded-lg"
-                          onError={() => {
-                            setHardinessMapUrl(null);
-                            setIsLoadingMap(false);
-                          }}
-                        />
+                    <div className="flex items-center justify-center relative min-h-[200px]">
+                      {hardinessMapUrl ? (
+                        <>
+                          {isLoadingMap && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10 rounded-lg">
+                              <div className="text-muted-foreground">
+                                {t.loading || "Loading..."}
+                              </div>
+                            </div>
+                          )}
+                          <img
+                            src={hardinessMapUrl}
+                            alt={t.speciesHardinessLocation || "Hardiness Location Map"}
+                            className="w-full h-auto rounded-lg"
+                            onLoad={() => {
+                              setIsLoadingMap(false);
+                            }}
+                            onError={() => {
+                              setHardinessMapUrl(null);
+                              setIsLoadingMap(false);
+                            }}
+                          />
+                        </>
                       ) : (
                         <div className="py-8 text-muted-foreground">
-                          {t.errorLoading || "Failed to load map"}
+                          {isLoadingMap ? (t.loading || "Loading...") : (t.errorLoadingMap || "Failed to load map")}
                         </div>
                       )}
                     </div>

@@ -7,8 +7,8 @@ from uuid import UUID
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models import Plant, Species, Subscription
-from .models import PlantDB, SpeciesDB, SubscriptionDB
+from ..models import Plant, Species, Subscription, HardinessMap
+from .models import PlantDB, SpeciesDB, SubscriptionDB, HardinessMapDB
 
 
 async def load_plants(db: AsyncSession) -> Dict[UUID, Plant]:
@@ -111,4 +111,19 @@ async def update_subscription(db: AsyncSession, subscription: Subscription) -> N
 async def delete_subscription(db: AsyncSession, subscription_id: UUID) -> None:
     """Delete a subscription from the database."""
     await db.execute(delete(SubscriptionDB).filter(SubscriptionDB.id == subscription_id))
+    await db.commit()
+
+
+async def get_hardiness_map(db: AsyncSession, id: int) -> HardinessMap | None:
+    """Retrieve a hardiness map by id."""
+    db_hardiness_map = await db.get(HardinessMapDB, id)
+    if db_hardiness_map is None:
+        return None
+    return db_hardiness_map.to_model()
+
+
+async def save_hardiness_map(db: AsyncSession, hardiness_map: HardinessMap) -> None:
+    """Save a hardiness map to the database."""
+    db_hardiness_map = HardinessMapDB.from_model(hardiness_map)
+    db.add(db_hardiness_map)
     await db.commit()

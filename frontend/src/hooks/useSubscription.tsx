@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useToast } from "./useToast";
+import { useToast, delayedToast } from "./useToast";
 import { Translations } from "@/lib/translations";
 
 export interface Subscription {
@@ -18,7 +18,7 @@ export const useSubscription = (t: Translations) => {
   }, []);
 
   const loadSubscriptions = async () => {
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.loadingSubscriptions || "Loading subscriptions...",
     });
@@ -62,7 +62,7 @@ export const useSubscription = (t: Translations) => {
       return false;
     }
 
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.addingSubscription || "Adding subscription...",
     });
@@ -103,7 +103,7 @@ export const useSubscription = (t: Translations) => {
     id: string,
     subscription: Partial<Subscription>
   ): Promise<boolean> => {
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.updatingSubscription || "Updating subscription...",
     });
@@ -139,7 +139,7 @@ export const useSubscription = (t: Translations) => {
 
   const deleteSubscription = async (id: string) => {
     const subscription = subscriptions.find((s) => s.id === id);
-    const loadingToast = toast({
+    const loadingToast = delayedToast({
       title: t.loading || "Loading...",
       description: t.deletingSubscription || "Deleting subscription...",
     });

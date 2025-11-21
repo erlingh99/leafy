@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import List
 from uuid import UUID
+from io import BytesIO
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import Response
@@ -17,9 +18,15 @@ from ..database import (
     save_plant,
     update_plant as db_update_plant,
     upsert_species,
+    get_hardiness_map as db_get_hardiness_map,
 )
 from ..models import Plant, PlantUpdate, Species
-from ..services import PerenualConfigurationError, fetch_perenual_enrichment, get_perenual_species_id, fetch_hardiness_map
+from ..services import (
+    PerenualConfigurationError,
+    fetch_perenual_enrichment,
+    get_perenual_species_id,
+    create_hardiness_map,
+)
 from ..utils import shrink_image
 
 plant_router = APIRouter(prefix="/api/plants", tags=["plants"])
@@ -41,21 +48,31 @@ async def get_species(perenual_id: int, db_context: AsyncSession = Depends(get_d
 @plant_router.get("/species/{perenual_id}/hardiness-map")
 async def get_hardiness_map(
     perenual_id: int,
+    db_context: AsyncSession = Depends(get_db),
 ):
-    """
-    Fetch and return the hardiness map image for a species.
-    This endpoint makes a server-side call to the Perenual API to avoid exposing the API key.
-    """
-    try:
-        image_bytes = await run_in_threadpool(fetch_hardiness_map, perenual_id)
-        return Response(content=image_bytes, media_type="image/png")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch hardiness map: {str(exc)}"
-        )
+    async with db_context as db:
+        species = await db_get_species(db, perenual_id)
+        if species is None:
+            raise HTTPException(status_code=404, detail="Species not found")
+        
+        if species.details.hardiness is None:
+            raise HTTPException(status_code=404, detail="Hardiness not found")
+
+        min = species.details.hardiness.min
+        max = species.details.hardiness.max
+        if (min is None or max is None):
+            raise HTTPException(status_code=404, detail="Hardiness not found")
+
+        indexes = list(range(int(min), int(max) + 1))
+        indexes.append(0)
+        hardiness_maps = [await db_get_hardiness_map(db, index) for index in indexes]
+        if any(m is None for m in hardiness_maps):
+            raise HTTPException(status_code=404, detail="Missing map")
+        hardiness_maps = [m for m in hardiness_maps if m is not None] #just for the type checker
+        image = create_hardiness_map(hardiness_maps)
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        return Response(content=buffer.getvalue(), media_type="image/png")
 
 @plant_router.get("/{plant_id}", response_model=Plant)
 async def get_plant(plant_id: UUID, db_context: AsyncSession = Depends(get_db)):
@@ -153,8 +170,8 @@ async def fetch_plant_info_and_update(plant_id: UUID, species_name: str) -> None
     except PerenualConfigurationError as exc:
         logger.error(f"Perenual configuration error: {exc}")
         return
-    except HTTPException as exc:
+    except Exception as exc:
         logger.warning(
-            f"Perenual API error for plant {plant_id} ({species}): {exc.detail}"
+            f"Perenual API error for plant {plant_id} ({species_name}): {exc}"
         )
         return

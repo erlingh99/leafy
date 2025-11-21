@@ -49,6 +49,7 @@ type StaticTranslationKeys =
   | "errorDeletingSubscription"
   | "errorLoadingSubscription"
   | "errorLoading"
+  | "errorLoadingMap"
   | "errorAdding"
   | "errorUpdating"
   | "errorWatering"
@@ -215,6 +216,7 @@ export const translations: TranslationDictionary = {
     errorUpdatingSubscription: "Error updating subscription",
     errorDeletingSubscription: "Error deleting subscription",
     errorLoading: "Error loading plants",
+    errorLoadingMap: "Error loading map",
     errorAdding: "Error adding plant",
     errorUpdating: "Error updating plant",
     errorWatering: "Error watering plant",
@@ -363,6 +365,7 @@ export const translations: TranslationDictionary = {
     plantDeleted: "Växt borttagen",
     plantDeletedDescription: (name: string) => `${name} har tagits bort`,
     errorLoading: "Fel vid laddning av växter",
+    errorLoadingMap: "Fel vid laddning av karta",
     errorAdding: "Fel vid tillägg av växt",
     errorLoadingSubscription: "Fel vid laddning av prenumerationer",
     errorAddingSubscription: "Fel vid tillägg av prenumeration",
