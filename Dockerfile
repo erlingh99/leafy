@@ -6,9 +6,10 @@ COPY ./frontend/ .
 RUN npm install && npm run build
 
 # Build backend
-FROM ghcr.io/astral-sh/uv:python3.11-alpine AS backend-builder
+FROM ghcr.io/astral-sh/uv:python3.13-alpine AS backend-builder
 WORKDIR /app
-COPY . .
+COPY ./backend/ .
+ENV UV_PROJECT_ENVIRONMENT=.venv
 RUN uv sync
 
 # Final stage
@@ -19,9 +20,9 @@ ARG BACKEND_PORT
 
 ENV BACKEND_HOST=${BACKEND_HOST} \
     BACKEND_PORT=${BACKEND_PORT} \
-    PATH="/venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH"
 
-COPY --from=backend-builder /venv /venv
+COPY --from=backend-builder /app/.venv /app/.venv
 
 WORKDIR /app
 
@@ -29,12 +30,6 @@ WORKDIR /app
 COPY ./backend ./backend
 # Copy frontend build
 COPY --from=frontend-builder /app/dist ./frontend/dist
-
-RUN apk update && apk add curl
-# Install tzdata (time zone database)
-RUN apk add --no-cache tzdata
-# Set the desired time zone
-ENV TZ=Europe/Berlin
 
 WORKDIR /app/backend
 CMD uvicorn app.main:app --host "${BACKEND_HOST}" --port "${BACKEND_PORT}"
