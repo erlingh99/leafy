@@ -22,7 +22,7 @@ sleep 10
 status=0
 
 # Check if the application is running
-if curl -s http://localhost/api/plants > /dev/null; then
+if curl -s http://leafy.lan/api/plants > /dev/null; then
     echo -e "${GREEN}✅ Application is running successfully!${NC}"
     echo -e "${GREEN}🌐 Access the application at: http://leafy.lan/${NC}" #this is only true if you have setup a dns record on your router
 else

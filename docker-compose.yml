@@ -3,7 +3,7 @@ services:
     container_name: leafy_backend
     hostname: leafy
     networks:
-      leafy_network:
+      pihole_pihole_network:
         ipv4_address: 192.168.0.5
     build:
       dockerfile: Dockerfile
@@ -17,11 +17,5 @@ services:
     restart: unless-stopped
 
 networks:
-  leafy_network:
-    driver: macvlan
-    driver_opts:
-      parent: eth0
-    ipam:
-      config:
-        - gateway: 192.168.0.1
-          subnet: 192.168.0.0/24
+  pihole_pihole_network:
+    external: true
