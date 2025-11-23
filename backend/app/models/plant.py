@@ -9,6 +9,7 @@ class Plant(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)  # ISO formatted string
     updated_at: datetime = Field(default_factory=datetime.now)  # ISO formatted string
     name: str
+    species_username: str | None = None
     species: str
     watering_interval: int
     last_watered: datetime
@@ -19,6 +20,7 @@ class Plant(BaseModel):
 class PlantUpdate(BaseModel):
     name: str | None = None
     species: str | None = None
+    species_username: str | None = None
     watering_interval: int | None = None
     last_watered: datetime | None = None
     image: bytes | None = None

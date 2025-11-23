@@ -24,7 +24,7 @@ async def send_email(API_KEY: str):
     needs_water: list[str] = []
     for plant in plants:
         next_water = plant.last_watered + timedelta(days=plant.watering_interval)
-        if next_water < datetime.now() and next_water > (datetime.now() - timedelta(days=1)):
+        if next_water.date() == datetime.now().date():
             needs_water.append(plant.name)
 
     if len(needs_water) == 0 or len(subs) == 0:

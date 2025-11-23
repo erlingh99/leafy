@@ -35,6 +35,7 @@ async def update_plant(db: AsyncSession, plant: Plant) -> None:
             name=db_plant.name,
             updated_at=db_plant.updated_at,
             species=db_plant.species,
+            species_username=db_plant.species_username,
             watering_interval=db_plant.watering_interval,
             last_watered=db_plant.last_watered,
             image=db_plant.image,
@@ -71,8 +72,9 @@ async def upsert_species(db: AsyncSession, species: Species) -> None:
     existing = await db.get(SpeciesDB, species.perenual_id)
     if existing:
         existing.details = species.details.model_dump()
-        existing.care_guides = species.care_guides.model_dump() if species.care_guides else None
         existing.updated_at = species.updated_at
+        if species.care_guides:
+            existing.care_guides = species.care_guides.model_dump()
     else:
         db_species = SpeciesDB.from_model(species)
         db.add(db_species)

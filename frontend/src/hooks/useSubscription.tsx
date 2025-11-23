@@ -1,12 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast, delayedToast } from "./useToast";
-import { Translations } from "@/lib/translations";
-
-export interface Subscription {
-  id: string;
-  name: string;
-  email: string;
-}
+import { Translations } from "@/translations/types";
+import { Subscription } from "@/models/subscription";
 
 
 export const useSubscription = (t: Translations) => {

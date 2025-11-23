@@ -1,115 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useToast, delayedToast } from "./useToast";
-import { Translations } from "@/lib/translations";
-
-export interface Plant {
-  id: string;
-  user_id: string;
-  name: string;
-  species: string;
-  watering_interval: number;
-  last_watered: string;
-  image?: string;
-  perenual_species_id?: number | null;
-}
-
-// Species interfaces
-export interface Dimension {
-  type?: string | null;
-  min_value?: number | null;
-  max_value?: number | null;
-  unit?: string | null;
-}
-
-export interface Hardiness {
-  min?: string | null;
-  max?: string | null;
-}
-
-export interface WateringGeneralBenchmark {
-  value?: string | null;
-  unit?: string | null;
-}
-
-export interface PlantAnatomyItem {
-  part?: string | null;
-  color?: string[] | null;
-}
-
-export interface PruningCount {
-  amount?: number | null;
-  interval?: string | null;
-}
-
-export interface SpeciesDetailsResponse {
-  common_name?: string | null;
-  scientific_name?: string[] | null;
-  other_name?: string[] | null;
-  family?: string | null;
-  hybrid?: boolean | null;
-  authority?: string | null;
-  subspecies?: string | null;
-  cultivar?: string | null;
-  variety?: string | null;
-  species_epithet?: string | null;
-  genus?: string | null;
-  origin?: string[] | null;
-  type?: string | null;
-  dimensions?: Dimension[] | null;
-  cycle?: string | null;
-  attracts?: string[] | null;
-  propagation?: string[] | null;
-  hardiness?: Hardiness | null;
-  watering?: string | null;
-  watering_general_benchmark?: WateringGeneralBenchmark | null;
-  plant_anatomy?: PlantAnatomyItem[] | null;
-  sunlight?: string[] | null;
-  pruning_month?: string[] | null;
-  pruning_count?: PruningCount | null;
-  seeds?: boolean | null;
-  maintenance?: string | null;
-  care_guides?: string | null;
-  soil?: string[] | null;
-  growth_rate?: string | null;
-  drought_tolerant?: boolean | null;
-  salt_tolerant?: boolean | null;
-  thorny?: boolean | null;
-  invasive?: boolean | null;
-  tropical?: boolean | null;
-  indoor?: boolean | null;
-  care_level?: string | null;
-  pest_susceptibility?: string[] | null;
-  flowers?: boolean | null;
-  flowering_season?: string | null;
-  cones?: boolean | null;
-  fruits?: boolean | null;
-  edible_fruit?: boolean | null;
-  harvest_season?: string | null;
-  leaf?: boolean | null;
-  edible_leaf?: boolean | null;
-  cuisine?: boolean | null;
-  medicinal?: boolean | null;
-  poisonous_to_humans?: boolean | null;
-  poisonous_to_pets?: boolean | null;
-  description?: string | null;
-}
-
-export interface GuideSection {
-  type?: string | null;
-  description?: string | null;
-}
-
-export interface SpeciesGuideData {
-  section?: GuideSection[];
-}
-
-export interface Species {
-  perenual_id: number;
-  details: SpeciesDetailsResponse;
-  care_guides?: SpeciesGuideData;
-  created_at?: string;
-  updated_at?: string;
-}
+import { Translations } from "@/translations/types";
+import { Plant } from "@/models/plant";
+import { Species } from "@/models/species";
 
 export const usePlants = (t: Translations) => {
   const { toast } = useToast();
@@ -152,6 +45,7 @@ export const usePlants = (t: Translations) => {
   const addPlant = async (plantData: {
     name: string;
     species: string;
+    species_username?: string;
     wateringInterval: string;
     image: string;
   }) => {
@@ -188,6 +82,7 @@ export const usePlants = (t: Translations) => {
         body: JSON.stringify({
           name: plantData.name,
           species: plantData.species,
+          species_username: plantData.species_username || null,
           watering_interval: interval,
           image: plantData.image,
           last_watered: new Date().toISOString(),
@@ -215,19 +110,23 @@ export const usePlants = (t: Translations) => {
   };
 
   const updatePlant = async (plantId: string, plantData: {
-    name: string;
-    species: string;
-    wateringInterval: string;
-    image: string;
+    name?: string;
+    species?: string;
+    species_username?: string;
+    wateringInterval?: string;
+    image?: string;
   }) => {
-    const interval = parseInt(plantData.wateringInterval);
-    if (isNaN(interval) || interval < 1) {
-      toast({
-        title: t.invalidInterval,
-        description: t.invalidIntervalDescription,
-        variant: "destructive",
-      });
-      return false;
+    // Validate watering interval if provided
+    if (plantData.wateringInterval !== undefined) {
+      const interval = parseInt(plantData.wateringInterval);
+      if (isNaN(interval) || interval < 1) {
+        toast({
+          title: t.invalidInterval,
+          description: t.invalidIntervalDescription,
+          variant: "destructive",
+        });
+        return false;
+      }
     }
 
     const loadingToast = delayedToast({
@@ -235,18 +134,40 @@ export const usePlants = (t: Translations) => {
       description: t.updatingPlant || "Updating plant...",
     });
 
+    // Build update payload with only provided fields
+    const updatePayload: {
+      name?: string;
+      species?: string;
+      species_username?: string;
+      watering_interval?: number;
+      image?: string;
+    } = {};
+
+    if (plantData.name !== undefined) {
+      updatePayload.name = plantData.name;
+    }
+    if (plantData.species !== undefined) {
+      updatePayload.species = plantData.species;
+    }
+    if (plantData.species_username !== undefined) {
+      // Empty string means clear the field (backend treats null as unchanged, so send empty string)
+      updatePayload.species_username = plantData.species_username || "";
+    }
+    if (plantData.wateringInterval !== undefined) {
+      updatePayload.watering_interval = parseInt(plantData.wateringInterval);
+    }
+    if (plantData.image !== undefined) {
+      // Empty string means clear the image (backend treats null as unchanged, so send empty string)
+      updatePayload.image = plantData.image || "";
+    }
+
     try {
       const response = await fetch(`/api/plants/${plantId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: plantData.name,
-          species: plantData.species,
-          watering_interval: interval,
-          image: plantData.image,
-        }),
+        body: JSON.stringify(updatePayload),
       });
 
       if (!response.ok) {
@@ -255,7 +176,7 @@ export const usePlants = (t: Translations) => {
 
       loadingToast.update({
         title: t.plantUpdated,
-        description: t.plantUpdatedDescription(plantData.name),
+        description: t.plantUpdatedDescription(plantData.name || "Plant"),
       });
       loadPlants();
       return true;

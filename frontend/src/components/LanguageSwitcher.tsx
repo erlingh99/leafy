@@ -6,12 +6,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Language } from "@/lib/translations";
+import { Language } from "@/translations/types";
 
 interface LanguageSwitcherProps {
   currentLanguage: Language;
   onLanguageChange: (language: Language) => void;
-  mobile: boolean;
+  mobile?: boolean;
 }
 
 export const LanguageSwitcher = ({ currentLanguage, onLanguageChange, mobile = false }: LanguageSwitcherProps) => {

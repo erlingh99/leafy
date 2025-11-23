@@ -5,18 +5,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/useToast";
-import { Plant } from "@/hooks/usePlants";
-import { Translations } from "@/lib/translations";
+import { Plant } from "@/models/plant";
+import { Translations } from "@/translations/types";
 
 interface PlantDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingPlant: Plant | null;
   onSubmit: (plantData: {
-    name: string;
-    species: string;
-    wateringInterval: string;
-    image: string;
+    name?: string;
+    species?: string;
+    species_username?: string;
+    wateringInterval?: string;
+    image?: string;
   }) => Promise<boolean>;
   t: Translations;
 }
@@ -26,9 +27,17 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
   const [plantData, setPlantData] = useState({
     name: editingPlant?.name || "",
     species: editingPlant?.species || "",
+    species_username: editingPlant?.species_username || "",
     wateringInterval: editingPlant?.watering_interval.toString() || "7",
     image: editingPlant?.image || "",
   });
+  const [originalData, setOriginalData] = useState<{
+    name: string;
+    species: string;
+    species_username: string;
+    wateringInterval: string;
+    image: string;
+  } | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,24 +64,151 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
   };
 
   const handleSubmit = async () => {
-    const success = await onSubmit(plantData);
-    if (success) {
-      setPlantData({ name: "", species: "", wateringInterval: "7", image: "" });
-      onOpenChange(false);
+    // Validate required fields when adding a new plant
+    if (!editingPlant) {
+      if (!plantData.name.trim()) {
+        toast({
+          title: t.missingInfo,
+          description: t.fillAllFields,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!plantData.species.trim()) {
+        toast({
+          title: t.missingInfo,
+          description: t.fillAllFields,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!plantData.wateringInterval || parseInt(plantData.wateringInterval) < 1) {
+        toast({
+          title: t.invalidInterval,
+          description: t.invalidIntervalDescription,
+          variant: "destructive",
+        });
+        return;
+      }
+      // Send all required fields for new plant
+      const success = await onSubmit({
+        name: plantData.name,
+        species: plantData.species,
+        species_username: plantData.species_username || undefined,
+        wateringInterval: plantData.wateringInterval,
+        image: plantData.image || undefined,
+      });
+      if (success) {
+        setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "" });
+        setOriginalData(null);
+        onOpenChange(false);
+      }
+    } else {
+      // Validate required fields when updating (they can be changed but not left empty)
+      if (plantData.name.trim() === "") {
+        toast({
+          title: t.missingInfo,
+          description: t.fillAllFields,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (plantData.species.trim() === "") {
+        toast({
+          title: t.missingInfo,
+          description: t.fillAllFields,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!plantData.wateringInterval || parseInt(plantData.wateringInterval) < 1) {
+        toast({
+          title: t.invalidInterval,
+          description: t.invalidIntervalDescription,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // For updates, only send changed fields
+      const changedFields: {
+        name?: string;
+        species?: string;
+        species_username?: string;
+        wateringInterval?: string;
+        image?: string;
+      } = {};
+
+      if (!originalData) {
+        // Fallback: send all fields if originalData is not set
+        changedFields.name = plantData.name;
+        changedFields.species = plantData.species;
+        // Preserve empty string for optional fields to allow clearing
+        changedFields.species_username = plantData.species_username || "";
+        changedFields.wateringInterval = plantData.wateringInterval;
+        changedFields.image = plantData.image || "";
+      } else {
+        // Compare and only include changed fields
+        // Required fields: only include if changed
+        if (plantData.name !== originalData.name) {
+          changedFields.name = plantData.name;
+        }
+        if (plantData.species !== originalData.species) {
+          changedFields.species = plantData.species;
+        }
+        if (plantData.wateringInterval !== originalData.wateringInterval) {
+          changedFields.wateringInterval = plantData.wateringInterval;
+        }
+        
+        // Optional fields: include if changed, including clearing (value to empty)
+        // Normalize empty strings and null/undefined for comparison
+        const currentSpeciesUsername = plantData.species_username || "";
+        const originalSpeciesUsername = originalData.species_username || "";
+        if (currentSpeciesUsername !== originalSpeciesUsername) {
+          // Send empty string to clear, or the value if set
+          changedFields.species_username = plantData.species_username || "";
+        }
+        
+        const currentImage = plantData.image || "";
+        const originalImage = originalData.image || "";
+        if (currentImage !== originalImage) {
+          // Send empty string to clear, or the value if set
+          changedFields.image = plantData.image || "";
+        }
+      }
+
+      // Only submit if there are changes
+      if (Object.keys(changedFields).length === 0) {
+        toast({
+          title: t.plantUpdated,
+          description: t.plantUpdatedDescription(plantData.name),
+        });
+        onOpenChange(false);
+        return;
+      }
+
+      const success = await onSubmit(changedFields);
+      if (success) {
+        onOpenChange(false);
+      }
     }
   };
 
   // Update local state when editing plant changes
   useEffect(() => {
     if (editingPlant) {
-      setPlantData({
+      const initialData = {
         name: editingPlant.name,
         species: editingPlant.species,
+        species_username: editingPlant.species_username ?? "",
         wateringInterval: editingPlant.watering_interval.toString(),
         image: editingPlant.image || "",
-      });
+      };
+      setPlantData(initialData);
+      setOriginalData(initialData);
     } else {
-      setPlantData({ name: "", species: "", wateringInterval: "7", image: "" });
+      setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "" });
+      setOriginalData(null);
     }
   }, [editingPlant]);
 
@@ -138,6 +274,15 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
               onChange={(e) => setPlantData({ ...plantData, species: e.target.value })}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="species_username">{t.speciesUsername}</Label>
+            <Input
+              id="species_username"
+              placeholder={t.speciesUsernamePlaceholder}
+              value={plantData.species_username}
+              onChange={(e) => setPlantData({ ...plantData, species_username: e.target.value })}
+            />
+          </div>          
           <div className="space-y-2">
             <Label htmlFor="interval">{t.wateringInterval}</Label>
             <Input

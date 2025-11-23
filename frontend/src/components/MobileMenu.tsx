@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { useTheme } from "@/components/ThemeProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Language, Translations } from "@/lib/translations";
+import { Language, Translations } from "@/translations/types";
 import { SubscriptionManager } from "@/components/SubscriptionManager";
 import { Subscription } from "@/hooks/useSubscription";
 
