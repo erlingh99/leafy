@@ -3,7 +3,7 @@ from base64 import b64decode, b64encode
 import logging
 
 from fastapi import HTTPException, status
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError, ImageOps
 
 MAX_IMAGE_SIZE = (1024, 1024)  # width, height in pixels
 MAX_FILE_SIZE = 1 * 1024 * 1024  # 1 MB in bytes
@@ -14,10 +14,10 @@ QUALITY_STEP = 5
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.DEBUG)
 
-
 def decode_data_uri(image_bytes: bytes) -> bytes:
     """Extract and decode base64 data from a data URI."""
     image_data_str = image_bytes.decode('utf-8')
+    logger.debug(f"Image format: {image_data_str[:30]}")
     if image_data_str.startswith('data:'):
         image_data_str = image_data_str.split(',', 1)[1]
     return b64decode(image_data_str)
@@ -105,12 +105,13 @@ def shrink_image(image_bytes: bytes) -> bytes:
     """
     if not image_bytes:
         return image_bytes
-
+    
     try:
         actual_image_bytes = decode_data_uri(image_bytes)
         
         with Image.open(BytesIO(actual_image_bytes)) as image:
             original_format = image.format or "PNG"
+            image = ImageOps.exif_transpose(image)
             image.thumbnail(MAX_IMAGE_SIZE, Image.Resampling.LANCZOS)
             
             optimized_bytes, final_format = optimize_image(image, original_format)
@@ -123,7 +124,9 @@ def shrink_image(image_bytes: bytes) -> bytes:
                 final_format = original_format
             
             mime_type = f"image/{final_format.lower()}"
-            return encode_data_uri(final_bytes, mime_type)
+            shrunk_bytes = encode_data_uri(final_bytes, mime_type)
+            logger.debug(f"Image compressed {(1-len(shrunk_bytes)/len(actual_image_bytes))*100:.2f}%")
+            return shrunk_bytes
 
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         logger.error(f"Error shrinking image: {exc}")

@@ -22,6 +22,7 @@ class PlantDB(Base):
     )
     name: Mapped[str] = mapped_column(Text())
     species: Mapped[str] = mapped_column(Text())
+    species_username: Mapped[str | None] = mapped_column(Text(), nullable=True)
     watering_interval: Mapped[int] = mapped_column(Integer())
     last_watered: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     image: Mapped[bytes] = mapped_column(LargeBinary())
@@ -38,6 +39,7 @@ class PlantDB(Base):
             created_at=plant.created_at,
             updated_at=plant.updated_at,
             name=plant.name,
+            species_username=plant.species_username,
             species=plant.species,
             watering_interval=plant.watering_interval,
             last_watered=plant.last_watered,
@@ -52,6 +54,7 @@ class PlantDB(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
             name=self.name,
+            species_username=self.species_username,
             species=self.species,
             watering_interval=self.watering_interval,
             last_watered=self.last_watered,
@@ -99,7 +102,7 @@ class SpeciesDB(Base):
         DateTime(timezone=True),
         onupdate=func.now()
     )
-    details: Mapped[dict] = mapped_column(JSON()) #TODO not like this... or?
+    details: Mapped[dict] = mapped_column(JSON())
     care_guides: Mapped[dict] = mapped_column(JSON())
 
     @classmethod

@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-import { usePlants, Plant } from "@/hooks/usePlants";
+import { usePlants } from "@/hooks/usePlants";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Header } from "@/components/Header";
 import { PlantCard } from "@/components/PlantCard";
 import { PlantDialog } from "@/components/PlantDialog";
 import { EmptyPlantState } from "@/components/EmptyPlantState";
 import { Dialog } from "@/components/ui/dialog";
-import { translations, Language } from "@/lib/translations";
+import { translations, Language } from "@/translations/types";
+import { Plant } from "@/models/plant";
 
 const Index = () => {
   const { theme, setTheme } = useTheme();
@@ -30,15 +31,26 @@ const Index = () => {
   };
 
   const handlePlantSubmit = async (plantData: {
-    name: string;
-    species: string;
-    wateringInterval: string;
-    image: string;
+    name?: string;
+    species?: string;
+    species_username?: string;
+    wateringInterval?: string;
+    image?: string;
   }) => {
     if (editingPlant) {
       return await updatePlant(editingPlant.id, plantData);
     } else {
-      return await addPlant(plantData);
+      // For new plants, ensure required fields are present
+      if (!plantData.name || !plantData.species || !plantData.wateringInterval) {
+        return false;
+      }
+      return await addPlant({
+        name: plantData.name,
+        species: plantData.species,
+        species_username: plantData.species_username,
+        wateringInterval: plantData.wateringInterval,
+        image: plantData.image || "",
+      });
     }
   };
 

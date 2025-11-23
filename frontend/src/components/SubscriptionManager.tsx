@@ -9,8 +9,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Subscription } from "@/hooks/useSubscription";
-import { Translations } from "@/lib/translations";
+import { Subscription } from "@/models/subscription";
+import { Translations } from "@/translations/types";
 
 interface SubscriptionManagerProps {
   subscriptions: Subscription[];

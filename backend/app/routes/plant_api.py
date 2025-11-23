@@ -63,7 +63,7 @@ async def get_hardiness_map(
         if (min is None or max is None):
             raise HTTPException(status_code=404, detail="Hardiness not found")
 
-        indexes = list(range(int(min), int(max) + 1))
+        indexes = list(range(min, max + 1))
         indexes.append(0)
         hardiness_maps = [await db_get_hardiness_map(db, index) for index in indexes]
         if any(m is None for m in hardiness_maps):

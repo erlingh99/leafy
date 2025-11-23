@@ -11,8 +11,9 @@ import { Card } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plant, Species } from "@/hooks/usePlants";
-import { Translations } from "@/lib/translations";
+import { Plant } from "@/models/plant";
+import { Species } from "@/models/species";
+import { Translations } from "@/translations/types";
 
 interface PlantCardProps {
   plant: Plant;
@@ -107,12 +108,12 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
             <Button variant="ghost" size="sm" className="h-auto p-0 text-primary">
               {isOpen ? (
                 <>
-                  <span className="text-xs">Less</span>
+                  <span className="text-xs">{t.less}</span>
                   <ChevronUp className="h-3 w-3 ml-1" />
                 </>
               ) : (
                 <>
-                  <span className="text-xs">More</span>
+                  <span className="text-xs">{t.more}</span>
                   <ChevronDown className="h-3 w-3 ml-1" />
                 </>
               )}
@@ -624,7 +625,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-xl font-semibold text-foreground">{plant.name}</h3>
-                <p className="text-sm text-muted-foreground italic">{plant.species}</p>
+                <p className="text-sm text-muted-foreground italic">{plant.species_username ?? plant.species}</p>
               </div>
               {isOverdue && (
                 <div className="bg-warning/20 text-warning px-2 py-1 rounded-md text-xs font-medium">
