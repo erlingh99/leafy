@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { MobileMenu } from "@/components/MobileMenu";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Language, Translations } from "@/lib/translations";
-import { Subscription } from "@/hooks/useSubscription";
+import { Language, Translations } from "@/translations/types";
+import { Subscription } from "@/models/subscription";
 import { SubscriptionManager } from "@/components/SubscriptionManager";
 
 interface HeaderProps {

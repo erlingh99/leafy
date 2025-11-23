@@ -112,8 +112,9 @@ def _search_species(session: requests.Session, query: str) -> SpeciesListRespons
     payload = _request(session, "/v2/species-list", params={"q": query})
     try:
         response = SpeciesListResponse.model_validate(payload)
-    except ValidationError:
-        raise ValueError("Bad species list API response")
+    except ValidationError as exc:
+        logger.error(f"{exc.errors()}")
+        raise ValueError("Bad species list API response") from exc
 
     if not response.data:
         raise ValueError(f"No species found for query '{query}'.")
@@ -142,8 +143,9 @@ def _fetch_details(session: requests.Session, species_id: int) -> SpeciesDetails
     payload = _request(session, f"/v2/species/details/{species_id}")
     try:        
         return SpeciesDetailsResponse.model_validate(payload)
-    except ValidationError:
-        raise ValueError("Bad species details API response")
+    except ValidationError as exc:
+        logger.error(f"{exc.errors()}")
+        raise ValueError("Bad species details API response") from exc
 
 
 def _fetch_care_guides(
@@ -157,8 +159,9 @@ def _fetch_care_guides(
     )
     try:
         response = SpeciesGuideResponse.model_validate(payload)
-    except ValidationError:
-        raise ValueError("Bad species care guide API response")
+    except ValidationError as exc:
+        logger.error(f"{exc.errors()}")
+        raise ValueError("Bad species care guide API response") from exc
     return response.data or []
 
 

@@ -1,6 +1,14 @@
 from datetime import datetime
+from typing import TypeVar, Annotated
+from pydantic import BaseModel, Field, BeforeValidator
 
-from pydantic import BaseModel, Field
+T = TypeVar('T')
+
+def falsy_to_none(x: T) -> T | None:
+    return x or None
+
+LeniantOptional = Annotated[T | None, BeforeValidator(falsy_to_none)]
+
 
 ###SPECIES_LIST
 
@@ -25,13 +33,13 @@ class SpeciesListResponse(BaseModel):
 
 class Dimension(BaseModel):
     type: str | None
-    min_value: int | None
-    max_value: int | None
+    min_value: float | None
+    max_value: float | None
     unit: str | None
 
 class Hardiness(BaseModel):
-    min: str | None
-    max: str | None
+    min: int | None
+    max: int | None
 
 class WateringGeneralBenchmark(BaseModel):
     value: str | None
@@ -42,7 +50,7 @@ class PlantAnatomyItem(BaseModel):
     color: list[str] | None
 
 class PruningCount(BaseModel):
-    amount: int | None
+    amount: float | None
     interval: str | None
 
 class SpeciesDetailsResponse(BaseModel):
@@ -64,13 +72,13 @@ class SpeciesDetailsResponse(BaseModel):
     cycle: str | None = None
     attracts: list[str] | None = None
     propagation: list[str] | None = None
-    hardiness: Hardiness | None = None
+    hardiness: LeniantOptional[Hardiness] = None
     watering: str | None = None
-    watering_general_benchmark: WateringGeneralBenchmark | None = None
+    watering_general_benchmark: LeniantOptional[WateringGeneralBenchmark] = None
     plant_anatomy: list[PlantAnatomyItem] | None = None
     sunlight: list[str] | None = None
     pruning_month: list[str] | None = None
-    pruning_count: PruningCount | None = None
+    pruning_count: LeniantOptional[PruningCount] = None
     seeds: bool | None = None
     maintenance: str | None = None
     care_guides: str | None = None
