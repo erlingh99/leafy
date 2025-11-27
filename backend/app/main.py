@@ -22,9 +22,16 @@ async def lifespan(app: FastAPI):
     logger.debug("Initializing...")
     await init_db()
     API_KEY = BREVO_API_KEY or ""
+    scheduler = None
     if (API_KEY != ""):
         scheduler = BackgroundScheduler()
-        scheduler.add_job(lambda: send_email(API_KEY), "cron", hour=12, minute=0)
+        scheduler.add_job(
+            lambda: send_email(API_KEY),
+            "cron",
+            hour=12,
+            minute=0,
+            misfire_grace_time=12*60*60, #12 hours
+        )
         scheduler.start()
         logger.debug("Email reminders activated")
     else:
@@ -41,7 +48,13 @@ async def lifespan(app: FastAPI):
                 await save_hardiness_map(db, hardiness_map=HardinessMap(id=idx, image=map))
 
     logger.debug("Initialized")
-    yield
+
+    try:
+        yield
+    finally:
+        logger.info("Shutting down")
+        if scheduler:
+            scheduler.shutdown()
 
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size = 1000, compresslevel=5) # ty: ignore[invalid-argument-type]

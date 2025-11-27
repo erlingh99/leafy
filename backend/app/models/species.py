@@ -18,7 +18,7 @@ class SpeciesListData(BaseModel):
     scientific_name: list[str] | None = None
     other_name: list[str] | None = None
     family: str | None = None
-    hybrid: bool | None = None
+    hybrid: str | None = None
     authority: str | None = None
     subspecies: str | None = None
     cultivar: str | None = None
@@ -58,7 +58,7 @@ class SpeciesDetailsResponse(BaseModel):
     scientific_name: list[str] | None = None
     other_name: list[str] | None = None
     family: str | None = None
-    hybrid: bool | None = None
+    hybrid: bool | str | None = None
     authority: str | None = None
     species_id: int | None = None
     subspecies: str | None = None

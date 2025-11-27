@@ -31,5 +31,10 @@ COPY ./backend ./backend
 # Copy frontend build
 COPY --from=frontend-builder /app/dist ./frontend/dist
 
+# Install tzdata (time zone database)
+RUN apk add --no-cache tzdata
+# Set the desired time zone
+ENV TZ=Europe/Berlin
+
 WORKDIR /app/backend
 CMD uvicorn app.main:app --host "${BACKEND_HOST}" --port "${BACKEND_PORT}"
