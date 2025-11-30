@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.gzip import GZipMiddleware
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import logging
 from contextlib import asynccontextmanager
@@ -24,13 +24,14 @@ async def lifespan(app: FastAPI):
     API_KEY = BREVO_API_KEY or ""
     scheduler = None
     if (API_KEY != ""):
-        scheduler = BackgroundScheduler()
+        scheduler = AsyncIOScheduler()
         scheduler.add_job(
-            lambda: send_email(API_KEY),
-            "cron",
+            send_email,
+            trigger="cron",
             hour=12,
             minute=0,
             misfire_grace_time=12*60*60, #12 hours
+            args=(API_KEY, )
         )
         scheduler.start()
         logger.debug("Email reminders activated")
