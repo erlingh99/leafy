@@ -154,6 +154,8 @@ export const en_US: Translations = {
   addingSubscription: "Adding subscription...",
   updatingSubscription: "Updating subscription...",
   deletingSubscription: "Deleting subscription...",
+  myPlants: "My Plants",
+  waterAll: "Water All",
   less: "Less",
   more: "More",
   notFound404: "404",

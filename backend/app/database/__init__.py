@@ -12,9 +12,11 @@ from .interaction import (
     upsert_species,
     get_hardiness_map,
     save_hardiness_map,
+    water_all_plants,
+    water_plant
 )
 from .models import PlantDB, SpeciesDB, SubscriptionDB, HardinessMapDB
-from .setup import Base, get_db, init_db
+from .setup import Base, get_db, init_db, async_session_maker
 
 __all__ = [
     "get_db",
@@ -37,4 +39,7 @@ __all__ = [
     "upsert_species",
     "get_hardiness_map",
     "save_hardiness_map",
+    "water_plant",
+    "water_all_plants",
+    "async_session_maker"
 ]

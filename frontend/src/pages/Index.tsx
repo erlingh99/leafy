@@ -7,8 +7,10 @@ import { PlantCard } from "@/components/PlantCard";
 import { PlantDialog } from "@/components/PlantDialog";
 import { EmptyPlantState } from "@/components/EmptyPlantState";
 import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { translations, Language } from "@/translations/types";
 import { Plant } from "@/models/plant";
+import { Droplet } from "lucide-react";
 
 const Index = () => {
   const { theme, setTheme } = useTheme();
@@ -17,7 +19,7 @@ const Index = () => {
   const [language, setLanguage] = useState<Language>("en");
   const t = translations[language];
 
-  const { plants, addPlant, updatePlant, waterPlant, deletePlant, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
+  const { plants, addPlant, updatePlant, waterPlant, deletePlant, waterAllPlants, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
 
   const openAddDialog = () => {
@@ -90,21 +92,30 @@ const Index = () => {
         {plants.length === 0 ? (
           <EmptyPlantState onAddPlant={openAddDialog} t={t} />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-            {plants.map((plant) => (
-              <PlantCard
-                key={plant.id}
-                plant={plant}
-                isOverdue={needsWater(plant)}
-                daysUntil={getDaysUntilWatering(plant)}
-                onWater={waterPlant}
-                onEdit={openEditDialog}
-                onDelete={deletePlant}
-                fetchSpecies={fetchSpecies}
-                t={t}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-foreground">{t.myPlants || "My Plants"}</h2>
+              <Button onClick={() => waterAllPlants()} variant="secondary" className="shadow-sm">
+                <Droplet className="h-4 w-4 mr-2 text-primary" />
+                {t.waterAll || "Water All"}
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+              {plants.map((plant) => (
+                <PlantCard
+                  key={plant.id}
+                  plant={plant}
+                  isOverdue={needsWater(plant)}
+                  daysUntil={getDaysUntilWatering(plant)}
+                  onWater={waterPlant}
+                  onEdit={openEditDialog}
+                  onDelete={deletePlant}
+                  fetchSpecies={fetchSpecies}
+                  t={t}
+                />
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>

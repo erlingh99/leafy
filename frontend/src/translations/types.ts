@@ -149,6 +149,8 @@ type StaticTranslationKeys =
   | "addingSubscription"
   | "updatingSubscription"
   | "deletingSubscription"
+  | "myPlants"
+  | "waterAll"
   | "less"
   | "more"
   | "notFound404"
@@ -175,6 +177,6 @@ export type TranslationDictionary = {
 };
 
 export const translations: TranslationDictionary = {
-    "en": en_US,
-    "sv": sv_SE
+  "en": en_US,
+  "sv": sv_SE
 }

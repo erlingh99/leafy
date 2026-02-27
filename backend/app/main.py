@@ -8,7 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 from contextlib import asynccontextmanager
 from .routes import plant_api, subscription_api
-from .database import init_db, save_hardiness_map, get_db, get_hardiness_map
+from .database import init_db, save_hardiness_map, get_db, get_hardiness_map, async_session_maker
 from .subscription import send_email
 from .config import BREVO_API_KEY
 from .services import get_hardiness_base_maps
@@ -38,13 +38,13 @@ async def lifespan(app: FastAPI):
     else:
         logger.debug("No API key found, skipping email")
 
-    async with get_db() as db:
+    async with async_session_maker() as db:
         map = await get_hardiness_map(db ,0)
 
     if map is None:
         logger.debug("Maps not found in database. Fetching...")
         basemaps = await run_in_threadpool(get_hardiness_base_maps)
-        async with get_db() as db:
+        async with async_session_maker() as db:
             for idx, map in basemaps:
                 await save_hardiness_map(db, hardiness_map=HardinessMap(id=idx, image=map))
 
