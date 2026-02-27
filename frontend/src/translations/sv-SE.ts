@@ -154,6 +154,8 @@ export const sv_SE: Translations = {
   addingSubscription: "Lägger till prenumeration...",
   updatingSubscription: "Uppdaterar prenumeration...",
   deletingSubscription: "Tar bort prenumeration...",
+  myPlants: "Mina växter",
+  waterAll: "Vattna alla",
   less: "Mindre",
   more: "Mer",
   notFound404: "404",
