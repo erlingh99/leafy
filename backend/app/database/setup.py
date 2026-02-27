@@ -1,7 +1,6 @@
 """
 SQLAlchemy database setup and session management
 """
-from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -20,7 +19,6 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-@asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Get a database session."""
     async with async_session_maker() as session:

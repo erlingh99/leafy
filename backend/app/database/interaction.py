@@ -3,6 +3,7 @@ SQLite storage backend for plants
 """
 from typing import Dict
 from uuid import UUID
+from datetime import datetime
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +23,6 @@ async def save_plant(db: AsyncSession, plant: Plant) -> None:
     """Save a single plant to the database."""
     db_plant = PlantDB.from_model(plant)
     db.add(db_plant)
-    await db.commit()
 
 
 async def update_plant(db: AsyncSession, plant: Plant) -> None:
@@ -42,13 +42,31 @@ async def update_plant(db: AsyncSession, plant: Plant) -> None:
             perenual_species_id=db_plant.perenual_species_id,
         )
     )
-    await db.commit()
+
+async def water_all_plants(db: AsyncSession) -> None:
+    await db.execute(
+        update(PlantDB)
+        .values(
+            last_watered=datetime.now()
+        )
+    )
+    
+async def water_plant(db: AsyncSession, plant_id: UUID) -> bool:
+    stmt = (
+        update(PlantDB)
+        .where(PlantDB.id == plant_id)
+        .values(last_watered=datetime.now())
+        .returning(PlantDB.id)
+    )
+    result = await db.execute(stmt)
+    updated_id = result.scalar_one_or_none()
+    return updated_id is not None
+
 
 
 async def delete_plant(db: AsyncSession, plant_id: UUID) -> None:
     """Delete a plant from the database."""
     await db.execute(delete(PlantDB).filter(PlantDB.id == plant_id))
-    await db.commit()
 
 
 async def get_plant(db: AsyncSession, plant_id: UUID) -> Plant | None:
@@ -78,7 +96,6 @@ async def upsert_species(db: AsyncSession, species: Species) -> None:
     else:
         db_species = SpeciesDB.from_model(species)
         db.add(db_species)
-    await db.commit()
 
 
 async def load_subscriptions(db: AsyncSession) -> Dict[UUID, Subscription]:
@@ -92,7 +109,6 @@ async def save_subscription(db: AsyncSession, subscription: Subscription) -> Non
     """Save a single subscription to the database."""
     db_subscription = SubscriptionDB.from_model(subscription)
     db.add(db_subscription)
-    await db.commit()
 
 
 async def update_subscription(db: AsyncSession, subscription: Subscription) -> None:
@@ -107,13 +123,11 @@ async def update_subscription(db: AsyncSession, subscription: Subscription) -> N
             updated_at=db_subscription.updated_at,
         )
     )
-    await db.commit()
 
 
 async def delete_subscription(db: AsyncSession, subscription_id: UUID) -> None:
     """Delete a subscription from the database."""
     await db.execute(delete(SubscriptionDB).filter(SubscriptionDB.id == subscription_id))
-    await db.commit()
 
 
 async def get_hardiness_map(db: AsyncSession, id: int) -> HardinessMap | None:
@@ -128,4 +142,3 @@ async def save_hardiness_map(db: AsyncSession, hardiness_map: HardinessMap) -> N
     """Save a hardiness map to the database."""
     db_hardiness_map = HardinessMapDB.from_model(hardiness_map)
     db.add(db_hardiness_map)
-    await db.commit()
