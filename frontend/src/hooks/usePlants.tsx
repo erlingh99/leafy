@@ -206,7 +206,7 @@ export const usePlants = (t: Translations) => {
     },
     onSuccess: () => {
       // Opt out of a full refetch to be lightweight, or refetch background:
-      // queryClient.invalidateQueries({ queryKey: ['plants'] });
+      queryClient.invalidateQueries({ queryKey: ['plants'] });
       toast({
         title: "Plants watered",
         description: "Successfully watered plants.",
