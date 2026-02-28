@@ -5,7 +5,7 @@ from datetime import timedelta, datetime
 from brevo_python import Configuration, ApiClient, TransactionalEmailsApi, SendSmtpEmail
 from brevo_python.rest import ApiException
 
-from ..database import load_subscriptions, load_plants, get_db
+from ..database import load_subscriptions, load_plants, async_session_maker
 from ..models import Plant, Subscription
 
 logger = logging.getLogger('uvicorn.error')
@@ -14,10 +14,9 @@ logger.setLevel(logging.DEBUG)
 async def send_email(API_KEY: str):
     logger.debug("Running daily email job...")
 
-    db_context = get_db()
     subs: list[Subscription] = []
     plants: list[Plant] = []
-    async with db_context as db:
+    async with async_session_maker() as db:
         subs = list((await load_subscriptions(db)).values())
         plants = list((await load_plants(db)).values())
 
