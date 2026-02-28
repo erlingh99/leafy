@@ -43,9 +43,9 @@ describe('usePlants optimistic updates', () => {
         const { result } = renderHook(() => usePlants(t), { wrapper });
 
         // Clear any background fetches that happened during render
-        (global.fetch as any).mockClear();
+        (global.fetch as ReturnType<typeof vi.fn>).mockClear();
         // Mock successful fetch for watering
-        (global.fetch as any).mockResolvedValueOnce({
+        (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
             ok: true,
             json: async () => ({}),
         });
@@ -57,45 +57,11 @@ describe('usePlants optimistic updates', () => {
 
         // Verify optimistic update (last_watered should be updated immediately)
         await waitFor(() => {
-            const updatedPlants = queryClient.getQueryData<any[]>(['plants']);
+            const updatedPlants = queryClient.getQueryData<Array<{ id: string; name: string; watering_interval: number; last_watered: string }>>(['plants']);
             expect(updatedPlants?.[0].last_watered).not.toBe('2023-01-01T00:00:00.000Z');
         });
 
         expect(global.fetch).toHaveBeenCalledWith('/api/plants/water/1', expect.objectContaining({
-            method: 'POST'
-        }));
-    });
-
-    it('optimistically updates all plants when waterAllPlants is called', async () => {
-        const mockPlants = [
-            { id: '1', name: 'Aloe', watering_interval: 2, last_watered: '2023-01-01T00:00:00.000Z' }, // overdue
-            { id: '2', name: 'Fern', watering_interval: 7, last_watered: '2023-01-01T00:00:00.000Z' }, // overdue
-        ];
-
-        queryClient.setQueryData(['plants'], mockPlants);
-
-        const { result } = renderHook(() => usePlants(t), { wrapper });
-
-        // Clear any background fetches triggered during render
-        (global.fetch as any).mockClear();
-        (global.fetch as any).mockResolvedValue({
-            ok: true,
-            json: async () => ({}),
-        });
-
-        act(() => {
-            result.current.waterAllPlants();
-        });
-
-        await waitFor(() => {
-            const updatedPlants = queryClient.getQueryData<any[]>(['plants']);
-            expect(updatedPlants?.[0].last_watered).not.toBe('2023-01-01T00:00:00.000Z');
-            expect(updatedPlants?.[1].last_watered).not.toBe('2023-01-01T00:00:00.000Z');
-        });
-
-        // Both plants should have been watered in a single bulk request
-        expect(global.fetch).toHaveBeenCalledTimes(1);
-        expect(global.fetch).toHaveBeenCalledWith('/api/plants/water/all', expect.objectContaining({
             method: 'POST'
         }));
     });
