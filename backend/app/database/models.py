@@ -4,7 +4,7 @@ SQLAlchemy models for the database
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, Text, func, LargeBinary
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, JSON, Text, func, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .setup import Base
@@ -13,6 +13,10 @@ from ..models import Plant, Species, Subscription, SpeciesDetailsResponse, Speci
 class PlantDB(Base):
     """Database model for plants"""
     __tablename__ = "plants"
+    __table_args__ = (
+        Index("ix_plants_perenual_species_id", "perenual_species_id"),
+        Index("ix_plants_last_watered", "last_watered"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -25,9 +29,10 @@ class PlantDB(Base):
     species_username: Mapped[str | None] = mapped_column(Text(), nullable=True)
     watering_interval: Mapped[int] = mapped_column(Integer())
     last_watered: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    image: Mapped[bytes] = mapped_column(LargeBinary())
+    image: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
+    thumbnail: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
     perenual_species_id: Mapped[int | None] = mapped_column(
-        Integer(), ForeignKey("plant_species.perenual_id"), nullable=True
+        Integer(), ForeignKey("plant_species.perenual_id", ondelete="SET NULL"), nullable=True
     )
 
 
@@ -44,6 +49,7 @@ class PlantDB(Base):
             watering_interval=plant.watering_interval,
             last_watered=plant.last_watered,
             image=plant.image,
+            thumbnail=getattr(plant, "thumbnail", None),
             perenual_species_id=plant.perenual_species_id,
         )
     

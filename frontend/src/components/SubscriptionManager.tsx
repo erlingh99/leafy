@@ -32,8 +32,10 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSubscription, setEditingSubscription] = useState({ name: "", email: "" });
 
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleAdd = async () => {
-    if (newSubscription.name && newSubscription.email) {
+    if (newSubscription.name && newSubscription.email && isValidEmail(newSubscription.email)) {
       await onAddSubscription(newSubscription);
       setNewSubscription({ name: "", email: "" });
     }
@@ -45,7 +47,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   };
 
   const handleSave = async () => {
-    if (editingId) {
+    if (editingId && isValidEmail(editingSubscription.email)) {
       await onUpdateSubscription(editingId, editingSubscription);
       setEditingId(null);
       setEditingSubscription({ name: "", email: "" });

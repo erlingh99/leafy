@@ -11,7 +11,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Language, Translations } from "@/translations/types";
 import { SubscriptionManager } from "@/components/SubscriptionManager";
-import { Subscription } from "@/hooks/useSubscription";
+import { Subscription } from "@/models/subscription";
 
 interface MobileMenuProps {
   currentLanguage: Language;
@@ -67,7 +67,7 @@ export function MobileMenu({
             ) : (
               <Moon className="h-4 w-4" />
             )}
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            {theme === "dark" ? t.lightMode : t.darkMode}
           </Button>
           <SubscriptionManager
             subscriptions={subscriptions}

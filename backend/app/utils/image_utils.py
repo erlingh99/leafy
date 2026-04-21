@@ -95,10 +95,10 @@ def shrink_image(image_bytes: bytes) -> bytes:
     Downscale and recompress raw image bytes.
 
     Args:
-        image_bytes: Raw image bytes containing a data URI (e.g., b"data:image/jpeg;base64,...")
+        image_bytes: Raw image bytes or a data URI bytes value.
 
     Returns:
-        Bytes of the optimized image as a data URI (max 1 MB).
+        Raw bytes of the optimized image (max 1 MB).
 
     Raises:
         HTTPException: If the provided bytes are not a valid image.
@@ -107,7 +107,20 @@ def shrink_image(image_bytes: bytes) -> bytes:
         return image_bytes
     
     try:
-        actual_image_bytes = decode_data_uri(image_bytes)
+        # Handle data URI input if provided (e.g. from frontend)
+        if isinstance(image_bytes, (bytes, bytearray)):
+            image_str = ""
+            try:
+                image_str = image_bytes.decode('utf-8', errors='ignore')
+            except Exception:
+                pass
+            
+            if image_str.startswith('data:'):
+                actual_image_bytes = decode_data_uri(image_bytes)
+            else:
+                actual_image_bytes = bytes(image_bytes)
+        else:
+            actual_image_bytes = bytes(image_bytes)
         
         with Image.open(BytesIO(actual_image_bytes)) as image:
             original_format = image.format or "PNG"
@@ -121,15 +134,66 @@ def shrink_image(image_bytes: bytes) -> bytes:
                 final_bytes = optimized_bytes
             else:
                 final_bytes = actual_image_bytes
-                final_format = original_format
             
-            mime_type = f"image/{final_format.lower()}"
-            shrunk_bytes = encode_data_uri(final_bytes, mime_type)
-            logger.debug(f"Image compressed {(1-len(shrunk_bytes)/len(actual_image_bytes))*100:.2f}%")
-            return shrunk_bytes
+            logger.debug(f"Image compressed {(1-len(final_bytes)/len(actual_image_bytes))*100:.2f}%")
+            return final_bytes
 
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         logger.error(f"Error shrinking image: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded image is invalid or corrupted.",
+        ) from exc
+
+
+def create_thumbnail(image_bytes: bytes, size: int = 400) -> bytes:
+    """
+    Create a square JPEG thumbnail from the provided image bytes.
+
+    Args:
+        image_bytes: Raw image bytes or a data URI bytes value.
+        size: The maximum width/height of the square thumbnail (default 400).
+
+    Returns:
+        Raw JPEG bytes for the thumbnail.
+
+    Raises:
+        HTTPException(400) on invalid image data.
+    """
+    if not image_bytes:
+        return b""
+
+    try:
+        # Accept data URI or raw bytes
+        if isinstance(image_bytes, (bytes, bytearray)):
+            # If it's a data URI, decode it
+            try:
+                image_str = image_bytes.decode('utf-8', errors='ignore')
+            except Exception:
+                image_str = None
+
+            if image_str and image_str.startswith('data:'):
+                raw_bytes = decode_data_uri(image_bytes)
+            else:
+                raw_bytes = bytes(image_bytes)
+        else:
+            # Invalid type — do not silently encode the python repr
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid image data provided; expected bytes or data URI.",
+            )
+
+        with Image.open(BytesIO(raw_bytes)) as image:
+            image = ImageOps.exif_transpose(image)
+            # Create a square crop/resize preserving aspect ratio
+            thumb = ImageOps.fit(image, (size, size), method=Image.Resampling.LANCZOS)
+            thumb = thumb.convert('RGB')
+            buffer = BytesIO()
+            thumb.save(buffer, format='JPEG', quality=75, optimize=True)
+            return buffer.getvalue()
+
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        logger.error(f"Error creating thumbnail: {exc}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded image is invalid or corrupted.",

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast, delayedToast } from "./useToast";
 import { Translations } from "@/translations/types";
@@ -9,7 +9,9 @@ export const usePlants = (t: Translations) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: plants = [] } = useQuery({
+  const plantsToastRef = useRef<ReturnType<typeof delayedToast> | null>(null);
+
+  const { data: plants = [], isPending: isPlantsPending } = useQuery({
     queryKey: ['plants'],
     queryFn: async () => {
       const response = await fetch(`/api/plants`, {
@@ -24,6 +26,18 @@ export const usePlants = (t: Translations) => {
       return response.json() as Promise<Plant[]>;
     },
   });
+
+  useEffect(() => {
+    if (isPlantsPending) {
+      plantsToastRef.current = delayedToast({
+        title: t.loading || "Loading...",
+        description: t.loadingPlants || "Loading your plants...",
+      });
+    } else if (plantsToastRef.current) {
+      plantsToastRef.current.dismiss();
+      plantsToastRef.current = null;
+    }
+  }, [isPlantsPending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addPlantMutation = useMutation({
     mutationFn: async (plantData: {
@@ -385,6 +399,7 @@ export const usePlants = (t: Translations) => {
 
   return {
     plants,
+    isAddingPlant: addPlantMutation.isPending,
     addPlant,
     updatePlant,
     waterPlant,

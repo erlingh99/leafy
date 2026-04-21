@@ -61,6 +61,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint('plants_perenual_species_id_fkey', 'plants', type_='foreignkey')
-    op.drop_column('plants', 'perenual_species_id')
+    with op.batch_alter_table("plants", schema=None) as batch_op:
+        batch_op.drop_constraint('plants_perenual_species_id_fkey', type_='foreignkey')
+        batch_op.drop_column('perenual_species_id')
     op.drop_table('plant_species')

@@ -21,6 +21,7 @@ from ..models import (
 )
 
 PERENUAL_TIMEOUT = 20  # seconds
+_HARDINESS_OVERLAY_OPACITY = 0.8
 
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.DEBUG)
@@ -183,7 +184,7 @@ def create_hardiness_map(hardiness_maps: list[HardinessMap]) -> Image.Image:
     for hardiness_map in hardiness_maps[1:]:
         with Image.open(BytesIO(hardiness_map.image)).convert("RGBA") as im:
             r, g, b, a = im.split()
-            a = a.point(lambda p: int(p*0.8))
+            a = a.point(lambda p: int(p * _HARDINESS_OVERLAY_OPACITY))
             img = Image.merge("RGBA", (r, g, b, a))
             canvas.alpha_composite(img)
     return canvas

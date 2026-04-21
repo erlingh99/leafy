@@ -1,12 +1,10 @@
-import os
-
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from typing import List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
+from ..config import BREVO_API_KEY
 from ..models import Subscription, SubscriptionUpdate
 from ..database import get_db, load_subscriptions, save_subscription, delete_subscription as db_delete_subscription, update_subscription as db_update_subscription
 from ..subscription import send_welcome_email
@@ -37,8 +35,8 @@ async def set_subscription(
     db: AsyncSession = Depends(get_db)
 ):
     await save_subscription(db, subscription)
-    background_tasks.add_task(send_welcome_email, subscription, os.getenv("BREVO_API_KEY"))
-    return {"message" : "Subscriptioned saved succesfully"}
+    background_tasks.add_task(send_welcome_email, subscription, BREVO_API_KEY)
+    return {"message": "Subscription saved successfully"}
 
 @subscription_router.patch("/{subscription_id}")
 async def update_subscription(subscription_id: UUID, partial_subscription: SubscriptionUpdate, db: AsyncSession = Depends(get_db)):
@@ -47,7 +45,7 @@ async def update_subscription(subscription_id: UUID, partial_subscription: Subsc
         subscription = subscriptions[subscription_id]
         update_data = subscription.model_dump() | partial_subscription.model_dump(exclude_unset=True, exclude_none=True)
         updated_subscription = Subscription(**update_data)
-        updated_subscription.updated_at = datetime.now()  # Update timestamp
+        updated_subscription.updated_at = datetime.now(timezone.utc)  # Update timestamp
         await db_update_subscription(db, updated_subscription)
         return {"message" : "Subscription updated successfully"}
     raise HTTPException(status_code=404, detail="Subscription not found")

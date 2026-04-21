@@ -161,4 +161,7 @@ export const en_US: Translations = {
   notFound404: "404",
   notFoundPageNotFound: "Oops! Page not found",
   notFoundReturnToHome: "Return to Home",
+  locale: "en-GB",
+  lightMode: "Light Mode",
+  darkMode: "Dark Mode",
 };

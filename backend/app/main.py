@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from .routes import plant_api, subscription_api
 from .database import init_db, save_hardiness_map, get_hardiness_map, async_session_maker
 from .subscription import send_email
-from .config import BREVO_API_KEY
+from .config import BREVO_API_KEY, SENDER_EMAIL
 from .services import get_hardiness_base_maps
 from .models import HardinessMap
 
@@ -21,9 +21,8 @@ logger.setLevel(logging.DEBUG)
 async def lifespan(app: FastAPI):
     logger.debug("Initializing...")
     await init_db()
-    API_KEY = BREVO_API_KEY or ""
     scheduler = None
-    if (API_KEY != ""):
+    if BREVO_API_KEY and SENDER_EMAIL:
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
             send_email,
@@ -31,12 +30,14 @@ async def lifespan(app: FastAPI):
             hour=12,
             minute=0,
             misfire_grace_time=12*60*60, #12 hours
-            args=(API_KEY, )
+            args=(BREVO_API_KEY, )
         )
         scheduler.start()
         logger.debug("Email reminders activated")
     else:
-        logger.debug("No API key found, skipping email")
+        logger.debug("Skipping email reminders (missing %s)", ", ".join(
+            k for k, v in [("BREVO_API_KEY", BREVO_API_KEY), ("SENDER_EMAIL", SENDER_EMAIL)] if not v
+        ))
 
     async with async_session_maker() as db:
         map = await get_hardiness_map(db ,0)
@@ -58,7 +59,7 @@ async def lifespan(app: FastAPI):
             scheduler.shutdown()
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(GZipMiddleware, minimum_size = 1000, compresslevel=5) # ty: ignore[invalid-argument-type]
+app.add_middleware(GZipMiddleware, minimum_size = 1000, compresslevel=5)
 
 # Mount static files for assets
 app.mount("/assets", StaticFiles(directory="../frontend/dist/assets"), name="assets")

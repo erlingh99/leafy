@@ -1,5 +1,4 @@
 import logging
-import os
 from datetime import timedelta, datetime
 
 from brevo_python import Configuration, ApiClient, TransactionalEmailsApi, SendSmtpEmail
@@ -7,6 +6,7 @@ from brevo_python.rest import ApiException
 
 from ..database import load_subscriptions, load_plants, async_session_maker
 from ..models import Plant, Subscription
+from ..config import BREVO_API_KEY, SENDER_EMAIL
 
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.DEBUG)
@@ -36,7 +36,7 @@ async def send_email(API_KEY: str):
 
     email = SendSmtpEmail(
         to=[{"email": s.email, "name": s.name} for s in subs],
-        sender={"email": "REDACTED", "name": "Leafy App"},
+        sender={"email": SENDER_EMAIL, "name": "Leafy App"},
         subject="Watering reminder",
         text_content=
         f"""Hello from Leafy!
@@ -57,7 +57,7 @@ def send_welcome_email(subscription: Subscription, api_key: str | None = None) -
     """
     Send a welcome email to a new subscriber.
     """
-    api_key = api_key or os.getenv("BREVO_API_KEY")
+    api_key = api_key or BREVO_API_KEY
     if not api_key:
         logger.debug("No API key configured, skipping welcome email for %s", subscription.email)
         return
@@ -68,7 +68,7 @@ def send_welcome_email(subscription: Subscription, api_key: str | None = None) -
 
     email = SendSmtpEmail(
         to=[{"email": subscription.email, "name": subscription.name}],
-        sender={"email": "REDACTED", "name": "Leafy App"},
+        sender={"email": SENDER_EMAIL, "name": "Leafy App"},
         subject="Welcome to Leafy 🌱",
         text_content=(
             f"Hi {subscription.name or 'there'},\n\n"

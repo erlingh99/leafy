@@ -27,7 +27,6 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
   const [hardinessMapUrl, setHardinessMapUrl] = useState<string | null>(null);
-  const [isLoadingMap, setIsLoadingMap] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const hasFetchedRef = useRef(false);
   const hasLoadedMapRef = useRef(false);
@@ -48,7 +47,6 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
     if (!isSpeciesOpen) {
       hasFetchedRef.current = false;
       setHardinessMapUrl(null);
-      setIsLoadingMap(false);
       setIsMapDialogOpen(false);
       hasLoadedMapRef.current = false;
     }
@@ -57,7 +55,6 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
   // Reset map URL when species data changes
   useEffect(() => {
     setHardinessMapUrl(null);
-    setIsLoadingMap(false);
     setIsMapDialogOpen(false);
     hasLoadedMapRef.current = false;
   }, [speciesData?.perenual_id]);
@@ -71,14 +68,11 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
 
   // Load map when dialog opens
   useEffect(() => {
-    if (isMapDialogOpen && !hardinessMapUrl && !isLoadingMap && speciesData?.perenual_id && !hasLoadedMapRef.current) {
+    if (isMapDialogOpen && !hardinessMapUrl && speciesData?.perenual_id && !hasLoadedMapRef.current) {
       hasLoadedMapRef.current = true;
-      setIsLoadingMap(true);
-      const mapUrl = `/api/plants/species/${speciesData.perenual_id}/hardiness-map`;
-      setHardinessMapUrl(mapUrl);
-      // Keep isLoadingMap as true - it will be set to false by onLoad or onError handlers
+      setHardinessMapUrl(`/api/plants/species/${speciesData.perenual_id}/hardiness-map`);
     }
-  }, [isMapDialogOpen, speciesData?.perenual_id, hardinessMapUrl, isLoadingMap]);
+  }, [isMapDialogOpen, speciesData?.perenual_id, hardinessMapUrl]);
 
 
   return (
@@ -89,9 +83,9 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
       <div className="p-6">
         <div className="flex gap-4 mb-6">
           <div className="flex-shrink-0">
-            {plant.image ? (
+            {plant.thumbnail_url ? (
               <img
-                src={plant.image}
+                src={plant.thumbnail_url}
                 alt={plant.name}
                 className="w-24 h-32 object-cover rounded-full"
                 style={{ borderRadius: "60% / 60%" }}
@@ -125,7 +119,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-muted-foreground">
-                  {t.watered}: {new Date(plant.last_watered).toLocaleDateString("en-GB")}
+                  {t.watered}: {new Date(plant.last_watered).toLocaleDateString(t.locale)}
                 </span>
               </div>
               <div className="text-sm font-medium">
