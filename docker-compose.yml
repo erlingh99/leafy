@@ -1,21 +1,21 @@
 services:
   leafy:
+    dns:
+      - 192.168.0.2
     container_name: leafy_backend
     hostname: leafy
     networks:
-      pihole_pihole_network:
-        ipv4_address: 192.168.0.5
+      - proxy
     build:
       dockerfile: Dockerfile
       args:
         BACKEND_HOST: "0.0.0.0"
         BACKEND_PORT: "80"
-    ports:
-      - "80:80"
     volumes:
       - ./backend/:/app/backend/
     restart: unless-stopped
 
 networks:
-  pihole_pihole_network:
+  proxy:
     external: true
+
