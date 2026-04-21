@@ -3,7 +3,6 @@ import logging
 from datetime import datetime, timezone
 from uuid import UUID
 from io import BytesIO
-from base64 import b64decode
 from binascii import Error as BinasciiError
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -35,10 +34,28 @@ from ..services import (
     get_perenual_species_id,
     create_hardiness_map,
 )
-from ..utils import shrink_image
-from ..utils import create_thumbnail
+from ..utils import shrink_image, create_thumbnail, parse_data_uri
 
 plant_router = APIRouter(prefix="/api/plants", tags=["plants"])
+
+logger = logging.getLogger('uvicorn.error')
+
+
+def _plant_response(plant: Plant, *, has_image: bool, has_thumbnail: bool) -> PlantResponse:
+    return PlantResponse(
+        id=plant.id,
+        created_at=plant.created_at,
+        updated_at=plant.updated_at,
+        name=plant.name,
+        species_username=plant.species_username,
+        species=plant.species,
+        watering_interval=plant.watering_interval,
+        last_watered=plant.last_watered,
+        perenual_species_id=plant.perenual_species_id,
+        image_url=(f"/api/plants/{plant.id}/image" if has_image else None),
+        thumbnail_url=(f"/api/plants/{plant.id}/thumbnail" if has_thumbnail else None),
+    )
+
 
 _hardiness_cache: dict[tuple[int, ...], bytes] = {}
 _HARDINESS_CACHE_MAX_SIZE = 64
@@ -69,24 +86,14 @@ async def _get_composed_hardiness_map(db: AsyncSession, ids: tuple[int, ...]) ->
 @plant_router.get("", response_model=list[PlantResponse])
 async def get_plants(db: AsyncSession = Depends(get_db)) -> list[PlantResponse]:
     rows = await load_plants_without_images(db)
-    responses: list[PlantResponse] = []
-    for r in rows:
-        responses.append(
-            PlantResponse(
-                id=r["id"],
-                created_at=r["created_at"],
-                updated_at=r["updated_at"],
-                name=r["name"],
-                species_username=r["species_username"],
-                species=r["species"],
-                watering_interval=r["watering_interval"],
-                last_watered=r["last_watered"],
-                perenual_species_id=r["perenual_species_id"],
-                image_url=(f"/api/plants/{r['id']}/image" if r["has_image"] else None),
-                thumbnail_url=(f"/api/plants/{r['id']}/thumbnail" if r["has_thumbnail"] else None),
-            )
+    return [
+        _plant_response(
+            Plant(**{k: v for k, v in r.items() if k not in ("has_image", "has_thumbnail")}),
+            has_image=r["has_image"],
+            has_thumbnail=r["has_thumbnail"],
         )
-    return responses
+        for r in rows
+    ]
 
 @plant_router.get("/species/{perenual_id}", response_model=Species)
 async def get_species(perenual_id: int, db: AsyncSession = Depends(get_db)):
@@ -130,24 +137,8 @@ async def get_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
     if db_plant is None:
         raise HTTPException(status_code=404, detail="Plant not found")
 
-    # Build response without inline image data
-    # Check if a thumbnail exists in the database (avoid loading blob)
     thumb_exists = await db_has_plant_thumbnail(db, plant_id)
-
-    resp = PlantResponse(
-        id=db_plant.id,
-        created_at=db_plant.created_at,
-        updated_at=db_plant.updated_at,
-        name=db_plant.name,
-        species_username=db_plant.species_username,
-        species=db_plant.species,
-        watering_interval=db_plant.watering_interval,
-        last_watered=db_plant.last_watered,
-        perenual_species_id=db_plant.perenual_species_id,
-        image_url=(f"/api/plants/{db_plant.id}/image" if db_plant.image else None),
-        thumbnail_url=(f"/api/plants/{db_plant.id}/thumbnail" if thumb_exists else None),
-    )
-    return resp
+    return _plant_response(db_plant, has_image=bool(db_plant.image), has_thumbnail=thumb_exists)
 
 @plant_router.delete("/{plant_id}")
 async def delete_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
@@ -162,41 +153,11 @@ async def stream_plant_image(plant_id: UUID, db: AsyncSession = Depends(get_db))
     if not image_data:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # Normalize to bytes
-    if isinstance(image_data, str):
-        image_bytes = image_data.encode('utf-8')
-    else:
-        image_bytes = bytes(image_data)
-
-    # If the DB contains a data URI, decode it and extract the mime type
-    media_type = "image/jpeg"
-    if image_bytes.startswith(b"data:"):
-        try:
-            header, b64part = image_bytes.split(b",", 1)
-        except ValueError:
-            raise HTTPException(status_code=500, detail="Invalid image data stored")
-
-        header_str = header.decode('utf-8', errors='ignore')
-        # header example: data:image/png;base64
-        try:
-            mime_part = header_str.split(':', 1)[1].split(';', 1)[0]
-            if mime_part:
-                media_type = mime_part
-        except Exception:
-            media_type = "image/jpeg"
-
-        try:
-            image_bytes = b64decode(b64part)
-        except BinasciiError:
-            raise HTTPException(status_code=500, detail="Invalid base64 image data")
-    else:
-        # Try to detect common formats from magic bytes
-        if image_bytes.startswith(b"\x89PNG"):
-            media_type = "image/png"
-        elif image_bytes.startswith(b"\xff\xd8"):
-            media_type = "image/jpeg"
-        elif image_bytes[:4] == b"GIF8":
-            media_type = "image/gif"
+    image_bytes = image_data.encode('utf-8') if isinstance(image_data, str) else bytes(image_data)
+    try:
+        image_bytes, media_type = parse_data_uri(image_bytes)
+    except (ValueError, BinasciiError):
+        raise HTTPException(status_code=500, detail="Invalid image data stored")
 
     headers = {"Cache-Control": "public, max-age=86400"}
     return Response(content=image_bytes, media_type=media_type, headers=headers)
@@ -232,18 +193,10 @@ async def set_plant(
         fetch_plant_info_and_update, processed_plant.id, processed_plant.species
     )
 
-    return PlantResponse(
-        id=processed_plant.id,
-        created_at=processed_plant.created_at,
-        updated_at=processed_plant.updated_at,
-        name=processed_plant.name,
-        species_username=processed_plant.species_username,
-        species=processed_plant.species,
-        watering_interval=processed_plant.watering_interval,
-        last_watered=processed_plant.last_watered,
-        perenual_species_id=processed_plant.perenual_species_id,
-        image_url=(f"/api/plants/{processed_plant.id}/image" if processed_plant.image else None),
-        thumbnail_url=(f"/api/plants/{processed_plant.id}/thumbnail" if thumbnail_bytes else None),
+    return _plant_response(
+        processed_plant,
+        has_image=bool(processed_plant.image),
+        has_thumbnail=bool(thumbnail_bytes),
     )
 
 @plant_router.patch("/{plant_id}", response_model=PlantResponse)
@@ -278,24 +231,15 @@ async def update_plant(
             fetch_plant_info_and_update, plant_id, partial_update["species"]
         )
 
-    # Determine thumbnail existence after update
     if not set_thumbnail:
         has_thumb = await db_has_plant_thumbnail(db, plant_id)
     else:
         has_thumb = thumbnail_update is not None
 
-    return PlantResponse(
-        id=updated_plant.id,
-        created_at=updated_plant.created_at,
-        updated_at=updated_plant.updated_at,
-        name=updated_plant.name,
-        species_username=updated_plant.species_username,
-        species=updated_plant.species,
-        watering_interval=updated_plant.watering_interval,
-        last_watered=updated_plant.last_watered,
-        perenual_species_id=updated_plant.perenual_species_id,
-        image_url=(f"/api/plants/{updated_plant.id}/image" if updated_plant.image else None),
-        thumbnail_url=(f"/api/plants/{updated_plant.id}/thumbnail" if has_thumb else None),
+    return _plant_response(
+        updated_plant,
+        has_image=bool(updated_plant.image),
+        has_thumbnail=has_thumb,
     )
 
 @plant_router.post("/water/all")
@@ -319,8 +263,6 @@ async def water_plant(
 
 
 
-logger = logging.getLogger('uvicorn.error')
-
 # Deduplicates concurrent background-task fetches for the same species name.
 _species_futures: dict[str, "asyncio.Future[int]"] = {}
 
@@ -335,7 +277,7 @@ async def _fetch_and_cache_species(species_name: str) -> int:
     if existing is not None:
         return await asyncio.shield(existing)
 
-    fut: asyncio.Future[int] = asyncio.get_event_loop().create_future()
+    fut: asyncio.Future[int] = asyncio.get_running_loop().create_future()
     _species_futures[species_name] = fut
     try:
         species = await get_perenual_species_id(species_name)

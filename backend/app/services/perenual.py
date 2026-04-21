@@ -1,6 +1,7 @@
 """
 Integration helpers for the Perenual Plant Open API.
 """
+import asyncio
 from typing import Any
 import logging
 from PIL import Image
@@ -97,17 +98,17 @@ async def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
 
 
 async def get_hardiness_base_maps() -> list[tuple[int, bytes]]:
-    base_maps = []
+    async def fetch_one(client: httpx.AsyncClient, i: int) -> tuple[int, bytes]:
+        url = f"{PERENUAL_BASE_URL.rstrip('/api/')}/storage/image/hardiness/lg/{i}.png"
+        try:
+            response = await client.get(url, timeout=PERENUAL_TIMEOUT)
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise ValueError(f"Perenual API call to get hardiness-map base map {i} failed.") from exc
+        return (i, response.content)
+
     async with httpx.AsyncClient() as client:
-        for i in range(0, 14):
-            url = f"{PERENUAL_BASE_URL.rstrip('/api/')}/storage/image/hardiness/lg/{i}.png"
-            try:
-                response = await client.get(url, timeout=PERENUAL_TIMEOUT)
-                response.raise_for_status()
-            except httpx.HTTPError as exc:
-                raise ValueError(f"Perenual API call to get hardiness-map base map {i} failed.") from exc
-            base_maps.append((i, response.content))
-    return base_maps
+        return list(await asyncio.gather(*[fetch_one(client, i) for i in range(14)]))
 
 
 async def _search_species(client: httpx.AsyncClient, query: str) -> SpeciesListResponse:

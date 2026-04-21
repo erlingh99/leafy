@@ -14,13 +14,32 @@ QUALITY_STEP = 5
 logger = logging.getLogger('uvicorn.error')
 logger.setLevel(logging.DEBUG)
 
+
+def parse_data_uri(image_bytes: bytes) -> tuple[bytes, str]:
+    """Parse a data URI → (raw_bytes, mime_type); infers MIME from magic bytes if not a data URI."""
+    if not image_bytes.startswith(b"data:"):
+        mime = "image/jpeg"
+        if image_bytes.startswith(b"\x89PNG"):
+            mime = "image/png"
+        elif image_bytes[:4] == b"GIF8":
+            mime = "image/gif"
+        return image_bytes, mime
+    try:
+        header, b64part = image_bytes.split(b",", 1)
+    except ValueError:
+        raise ValueError("Malformed data URI: missing comma separator")
+    header_str = header.decode("utf-8", errors="ignore")
+    try:
+        mime = header_str.split(":", 1)[1].split(";", 1)[0] or "image/jpeg"
+    except IndexError:
+        mime = "image/jpeg"
+    return b64decode(b64part), mime
+
+
 def decode_data_uri(image_bytes: bytes) -> bytes:
     """Extract and decode base64 data from a data URI."""
-    image_data_str = image_bytes.decode('utf-8')
-    logger.debug(f"Image format: {image_data_str[:30]}")
-    if image_data_str.startswith('data:'):
-        image_data_str = image_data_str.split(',', 1)[1]
-    return b64decode(image_data_str)
+    raw, _ = parse_data_uri(image_bytes)
+    return raw
 
 
 def encode_data_uri(image_bytes: bytes, mime_type: str) -> bytes:
@@ -107,21 +126,8 @@ def shrink_image(image_bytes: bytes) -> bytes:
         return image_bytes
     
     try:
-        # Handle data URI input if provided (e.g. from frontend)
-        if isinstance(image_bytes, (bytes, bytearray)):
-            image_str = ""
-            try:
-                image_str = image_bytes.decode('utf-8', errors='ignore')
-            except Exception:
-                pass
-            
-            if image_str.startswith('data:'):
-                actual_image_bytes = decode_data_uri(image_bytes)
-            else:
-                actual_image_bytes = bytes(image_bytes)
-        else:
-            actual_image_bytes = bytes(image_bytes)
-        
+        actual_image_bytes = decode_data_uri(image_bytes)
+
         with Image.open(BytesIO(actual_image_bytes)) as image:
             original_format = image.format or "PNG"
             image = ImageOps.exif_transpose(image)
@@ -164,24 +170,7 @@ def create_thumbnail(image_bytes: bytes, size: int = 400) -> bytes:
         return b""
 
     try:
-        # Accept data URI or raw bytes
-        if isinstance(image_bytes, (bytes, bytearray)):
-            # If it's a data URI, decode it
-            try:
-                image_str = image_bytes.decode('utf-8', errors='ignore')
-            except Exception:
-                image_str = None
-
-            if image_str and image_str.startswith('data:'):
-                raw_bytes = decode_data_uri(image_bytes)
-            else:
-                raw_bytes = bytes(image_bytes)
-        else:
-            # Invalid type — do not silently encode the python repr
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid image data provided; expected bytes or data URI.",
-            )
+        raw_bytes = decode_data_uri(image_bytes)
 
         with Image.open(BytesIO(raw_bytes)) as image:
             image = ImageOps.exif_transpose(image)

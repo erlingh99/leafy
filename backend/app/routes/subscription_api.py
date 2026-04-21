@@ -44,7 +44,7 @@ async def update_subscription(subscription_id: UUID, partial_subscription: Subsc
         subscription = subscriptions[subscription_id]
         update_data = subscription.model_dump() | partial_subscription.model_dump(exclude_unset=True, exclude_none=True)
         updated_subscription = Subscription(**update_data)
-        updated_subscription.updated_at = datetime.now(timezone.utc)  # Update timestamp
+        updated_subscription.updated_at = datetime.now(timezone.utc)
         await db_update_subscription(db, updated_subscription)
         return {"message" : "Subscription updated successfully"}
     raise HTTPException(status_code=404, detail="Subscription not found")
