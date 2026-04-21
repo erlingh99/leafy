@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.gzip import GZipMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -15,7 +14,7 @@ from .services import get_hardiness_base_maps
 from .models import HardinessMap
 
 logger = logging.getLogger('uvicorn.error')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)  # single authoritative setLevel for the shared uvicorn.error logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,7 +43,7 @@ async def lifespan(app: FastAPI):
 
     if map is None:
         logger.debug("Maps not found in database. Fetching...")
-        basemaps = await run_in_threadpool(get_hardiness_base_maps)
+        basemaps = await get_hardiness_base_maps()
         async with async_session_maker() as db:
             for idx, map in basemaps:
                 await save_hardiness_map(db, hardiness_map=HardinessMap(id=idx, image=map))

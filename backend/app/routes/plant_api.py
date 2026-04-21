@@ -1,8 +1,10 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 from uuid import UUID
 from io import BytesIO
 from base64 import b64decode
+from binascii import Error as BinasciiError
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import Response
@@ -39,6 +41,7 @@ from ..utils import create_thumbnail
 plant_router = APIRouter(prefix="/api/plants", tags=["plants"])
 
 _hardiness_cache: dict[tuple[int, ...], bytes] = {}
+_HARDINESS_CACHE_MAX_SIZE = 64
 
 
 async def _get_composed_hardiness_map(db: AsyncSession, ids: tuple[int, ...]) -> bytes:
@@ -57,6 +60,8 @@ async def _get_composed_hardiness_map(db: AsyncSession, ids: tuple[int, ...]) ->
         return buf.getvalue()
 
     result = await run_in_threadpool(_compose, h_maps)
+    if len(_hardiness_cache) >= _HARDINESS_CACHE_MAX_SIZE:
+        _hardiness_cache.clear()
     _hardiness_cache[ids] = result
     return result
 
@@ -106,6 +111,9 @@ async def get_hardiness_map(
     max_val = species.details.hardiness.max
     if (min_val is None or max_val is None):
         raise HTTPException(status_code=404, detail="Hardiness not found")
+
+    if min_val > max_val:
+        raise HTTPException(status_code=422, detail="Invalid hardiness zone range")
 
     ids = tuple(sorted([*range(min_val, max_val + 1), 0]))
     try:
@@ -179,7 +187,7 @@ async def stream_plant_image(plant_id: UUID, db: AsyncSession = Depends(get_db))
 
         try:
             image_bytes = b64decode(b64part)
-        except Exception:
+        except BinasciiError:
             raise HTTPException(status_code=500, detail="Invalid base64 image data")
     else:
         # Try to detect common formats from magic bytes
@@ -312,44 +320,61 @@ async def water_plant(
 
 
 logger = logging.getLogger('uvicorn.error')
-logger.setLevel(logging.DEBUG)
+
+# Deduplicates concurrent background-task fetches for the same species name.
+_species_futures: dict[str, "asyncio.Future[int]"] = {}
+
+
+async def _fetch_and_cache_species(species_name: str) -> int:
+    """Fetch species from Perenual and upsert to DB, returning perenual_id.
+
+    If a concurrent task is already fetching the same species name, waits for
+    that result instead of issuing a duplicate API call.
+    """
+    existing = _species_futures.get(species_name)
+    if existing is not None:
+        return await asyncio.shield(existing)
+
+    fut: asyncio.Future[int] = asyncio.get_event_loop().create_future()
+    _species_futures[species_name] = fut
+    try:
+        species = await get_perenual_species_id(species_name)
+        async with async_session_maker() as db:
+            existing_species = await db_get_species(db, species.id)
+            if existing_species is not None:
+                logger.debug("Using existing species data for species_id %s", species.id)
+                enrichment = existing_species
+            else:
+                logger.debug("Fetching species data from API for species_id %s", species.id)
+                enrichment = await fetch_perenual_enrichment(species)
+                await upsert_species(db, enrichment)
+                await db.commit()
+        fut.set_result(enrichment.perenual_id)
+        return enrichment.perenual_id
+    except Exception as exc:
+        if not fut.done():
+            fut.set_exception(exc)
+        raise
+    finally:
+        _species_futures.pop(species_name, None)
+
 
 async def fetch_plant_info_and_update(plant_id: UUID, species_name: str) -> None:
     try:
-        # First, get the species_id from the API
-        species = await run_in_threadpool(get_perenual_species_id, species_name)
-        
-        # Check if the species information is already in the database
+        perenual_id = await _fetch_and_cache_species(species_name)
+
         async with async_session_maker() as db:
-            existing_species = await db_get_species(db, species.id)
-            
-            if existing_species is not None:
-                # Use existing data from database
-                logger.debug(f"Using existing species data from database for species_id {species.id}")
-                enrichment = existing_species
-            else:
-                # Fetch full enrichment data from API
-                logger.debug(f"Fetching species data from API for species_id {species.id}")
-                enrichment = await run_in_threadpool(fetch_perenual_enrichment, species)
-                await upsert_species(db, enrichment)
-            
-            # Update the plant with the species_id
             plant = await db_get_plant(db, plant_id)
             if plant is None:
-                logger.warning(f"Plant {plant_id} no longer exists; skipping enrichment")
+                logger.warning("Plant %s no longer exists; skipping enrichment", plant_id)
                 return
-
-            plant.perenual_species_id = enrichment.perenual_id
+            plant.perenual_species_id = perenual_id
             plant.updated_at = datetime.now(timezone.utc)
-
             await db_update_plant(db, plant)
             await db.commit()
-            
+
     except PerenualConfigurationError as exc:
-        logger.error(f"Perenual configuration error: {exc}")
-        return
+        logger.error("Perenual configuration error: %s", exc)
     except Exception as exc:
-        logger.warning(
-            f"Perenual API error for plant {plant_id} ({species_name}): {exc}"
-        )
+        logger.warning("Perenual API error for plant %s (%s): %s", plant_id, species_name, exc)
         return

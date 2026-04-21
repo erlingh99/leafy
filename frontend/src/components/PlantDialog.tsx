@@ -44,6 +44,15 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: t.invalidFileType || "Invalid file type",
+          description: t.invalidFileTypeDescription || "Please select an image file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: t.imageTooLarge,
@@ -57,7 +66,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
       reader.onloadend = () => {
         const result = reader.result;
         if (typeof result === "string") {
-          setPlantData({ ...plantData, image: result });
+          setPlantData(prev => ({ ...prev, image: result }));
           setImageChanged(true);
         }
       };

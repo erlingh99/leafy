@@ -9,6 +9,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Subscription } from "@/models/subscription";
 import { Translations } from "@/translations/types";
 
@@ -77,8 +78,9 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
               >
                 {editingId === subscription.id ? (
                   <>
-                    <input
+                    <Input
                       type="text"
+                      aria-label={t.subscriptionNamePlaceholder || "Name"}
                       value={editingSubscription.name}
                       onChange={(e) =>
                         setEditingSubscription({
@@ -86,10 +88,10 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                           name: e.target.value,
                         })
                       }
-                      className="border p-1 rounded w-full"
                     />
-                    <input
+                    <Input
                       type="email"
+                      aria-label={t.subscriptionEmailPlaceholder || "Email"}
                       value={editingSubscription.email}
                       onChange={(e) =>
                         setEditingSubscription({
@@ -97,7 +99,6 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                           email: e.target.value,
                         })
                       }
-                      className="border p-1 rounded w-full"
                     />
                     <Button
                       variant="outline"
@@ -133,23 +134,23 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
             ))}
           </div>
           <div className="flex gap-2 mt-4 justify-between items-center">
-            <input
+            <Input
               type="text"
+              aria-label={t.subscriptionNamePlaceholder || "Name"}
               placeholder={t.subscriptionNamePlaceholder}
               value={newSubscription.name}
               onChange={(e) =>
                 setNewSubscription({ ...newSubscription, name: e.target.value })
               }
-              className="border p-1 rounded w-full"
             />
-            <input
+            <Input
               type="email"
+              aria-label={t.subscriptionEmailPlaceholder || "Email"}
               placeholder={t.subscriptionEmailPlaceholder}
               value={newSubscription.email}
               onChange={(e) =>
                 setNewSubscription({ ...newSubscription, email: e.target.value })
               }
-              className="border p-1 rounded w-full"
             />
             <Button onClick={handleAdd}>{t.subscriptionAdd}</Button>
           </div>

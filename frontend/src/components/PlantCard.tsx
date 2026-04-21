@@ -26,53 +26,31 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
   const [isSpeciesOpen, setIsSpeciesOpen] = useState(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
-  const [hardinessMapUrl, setHardinessMapUrl] = useState<string | null>(null);
-  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const hasFetchedRef = useRef(false);
-  const hasLoadedMapRef = useRef(false);
 
   useEffect(() => {
     if (isSpeciesOpen && !speciesData && !isLoadingSpecies && !hasFetchedRef.current && plant.perenual_species_id) {
       hasFetchedRef.current = true;
       setIsLoadingSpecies(true);
+      let cancelled = false;
       fetchSpecies(plant.perenual_species_id).then((data) => {
-        setSpeciesData(data);
-        setIsLoadingSpecies(false);
+        if (!cancelled) {
+          setSpeciesData(data);
+          setIsLoadingSpecies(false);
+        }
+      }).catch(() => {
+        if (!cancelled) setIsLoadingSpecies(false);
       });
+      return () => { cancelled = true; };
     }
   }, [isSpeciesOpen, speciesData, isLoadingSpecies, plant.perenual_species_id, fetchSpecies]);
 
-  // Reset the ref and map URL when the collapsible is closed
+  // Reset fetch gate when the collapsible is closed
   useEffect(() => {
     if (!isSpeciesOpen) {
       hasFetchedRef.current = false;
-      setHardinessMapUrl(null);
-      setIsMapDialogOpen(false);
-      hasLoadedMapRef.current = false;
     }
   }, [isSpeciesOpen]);
-
-  // Reset map URL when species data changes
-  useEffect(() => {
-    setHardinessMapUrl(null);
-    setIsMapDialogOpen(false);
-    hasLoadedMapRef.current = false;
-  }, [speciesData?.perenual_id]);
-
-  // Reset map ref when dialog closes
-  useEffect(() => {
-    if (!isMapDialogOpen) {
-      hasLoadedMapRef.current = false;
-    }
-  }, [isMapDialogOpen]);
-
-  // Load map when dialog opens
-  useEffect(() => {
-    if (isMapDialogOpen && !hardinessMapUrl && speciesData?.perenual_id && !hasLoadedMapRef.current) {
-      hasLoadedMapRef.current = true;
-      setHardinessMapUrl(`/api/plants/species/${speciesData.perenual_id}/hardiness-map`);
-    }
-  }, [isMapDialogOpen, speciesData?.perenual_id, hardinessMapUrl]);
 
 
   return (

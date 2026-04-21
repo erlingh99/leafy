@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast, delayedToast } from "./useToast";
+import { fetchWithTimeout } from "./fetchWithTimeout";
 import { Translations } from "@/translations/types";
 import { Plant } from "@/models/plant";
 import { Species } from "@/models/species";
@@ -14,7 +15,7 @@ export const usePlants = (t: Translations) => {
   const { data: plants = [], isPending: isPlantsPending } = useQuery({
     queryKey: ['plants'],
     queryFn: async () => {
-      const response = await fetch(`/api/plants`, {
+      const response = await fetchWithTimeout(`/api/plants`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -23,7 +24,7 @@ export const usePlants = (t: Translations) => {
       if (!response.ok) {
         throw new Error('Failed to fetch plants');
       }
-      return response.json() as Promise<Plant[]>;
+      return (await response.json()) as Plant[];
     },
   });
 
@@ -37,7 +38,7 @@ export const usePlants = (t: Translations) => {
       plantsToastRef.current.dismiss();
       plantsToastRef.current = null;
     }
-  }, [isPlantsPending]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isPlantsPending, t]);
 
   const addPlantMutation = useMutation({
     mutationFn: async (plantData: {
@@ -48,7 +49,7 @@ export const usePlants = (t: Translations) => {
       image: string;
     }) => {
       const interval = parseInt(plantData.wateringInterval);
-      const response = await fetch('/api/plants', {
+      const response = await fetchWithTimeout('/api/plants', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -66,7 +67,7 @@ export const usePlants = (t: Translations) => {
       if (!response.ok) {
         throw new Error('Failed to add plant');
       }
-      return response.json() as Promise<Plant>;
+      return (await response.json()) as Plant;
     },
     onSuccess: (newPlant, variables) => {
       queryClient.setQueryData<Plant[]>(['plants'], (old) => {
@@ -89,7 +90,7 @@ export const usePlants = (t: Translations) => {
 
   const updatePlantMutation = useMutation({
     mutationFn: async ({ plantId, updatePayload }: { plantId: string, updatePayload: Partial<Plant> }) => {
-      const response = await fetch(`/api/plants/${plantId}`, {
+      const response = await fetchWithTimeout(`/api/plants/${plantId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ export const usePlants = (t: Translations) => {
       if (!response.ok) {
         throw new Error('Failed to update plant');
       }
-      return response.json() as Promise<Plant>;
+      return (await response.json()) as Plant;
     },
     onSuccess: (updatedPlant, variables) => {
       queryClient.setQueryData<Plant[]>(['plants'], (old) => {
@@ -123,7 +124,7 @@ export const usePlants = (t: Translations) => {
 
   const waterPlantMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/plants/water/${id}`, {
+      const response = await fetchWithTimeout(`/api/plants/water/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,7 +182,7 @@ export const usePlants = (t: Translations) => {
 
   const waterAllPlantsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/plants/water/all', {
+      const response = await fetchWithTimeout('/api/plants/water/all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -230,7 +231,7 @@ export const usePlants = (t: Translations) => {
 
   const deletePlantMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/plants/${id}`, {
+      const response = await fetchWithTimeout(`/api/plants/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -369,7 +370,7 @@ export const usePlants = (t: Translations) => {
     });
 
     try {
-      const response = await fetch(`/api/plants/species/${perenualId}`, {
+      const response = await fetchWithTimeout(`/api/plants/species/${perenualId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -400,6 +401,9 @@ export const usePlants = (t: Translations) => {
   return {
     plants,
     isAddingPlant: addPlantMutation.isPending,
+    isUpdatingPlant: updatePlantMutation.isPending,
+    isDeletingPlant: deletePlantMutation.isPending,
+    isWateringPlant: waterPlantMutation.isPending,
     addPlant,
     updatePlant,
     waterPlant,

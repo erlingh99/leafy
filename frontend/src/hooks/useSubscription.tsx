@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast, delayedToast } from "./useToast";
+import { fetchWithTimeout } from "./fetchWithTimeout";
 import { Translations } from "@/translations/types";
 import { Subscription } from "@/models/subscription";
 
@@ -12,7 +13,7 @@ export const useSubscription = (t: Translations) => {
   const { data: subscriptions = [] } = useQuery({
     queryKey: ['subscriptions'],
     queryFn: async () => {
-      const response = await fetch(`/api/subscriptions`, {
+      const response = await fetchWithTimeout(`/api/subscriptions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -26,14 +27,14 @@ export const useSubscription = (t: Translations) => {
         throw new Error('Failed to fetch subscriptions');
       }
 
-      return response.json() as Promise<Subscription[]>;
+      return (await response.json()) as Subscription[];
     },
   });
 
   // Mutation for adding a subscription
   const addSubscriptionMutation = useMutation({
     mutationFn: async (subscriptionData: Partial<Subscription>) => {
-      const response = await fetch('/api/subscriptions', {
+      const response = await fetchWithTimeout('/api/subscriptions', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +69,7 @@ export const useSubscription = (t: Translations) => {
   // Mutation for updating a subscription
   const updateSubscriptionMutation = useMutation({
     mutationFn: async ({ id, subscription }: { id: string, subscription: Partial<Subscription> }) => {
-      const response = await fetch(`/api/subscriptions/${id}`, {
+      const response = await fetchWithTimeout(`/api/subscriptions/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ export const useSubscription = (t: Translations) => {
   // Mutation for deleting a subscription
   const deleteSubscriptionMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/subscriptions/${id}`, {
+      const response = await fetchWithTimeout(`/api/subscriptions/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

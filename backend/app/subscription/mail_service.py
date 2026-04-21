@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 from brevo_python import Configuration, ApiClient, TransactionalEmailsApi, SendSmtpEmail
 from brevo_python.rest import ApiException
@@ -9,7 +9,6 @@ from ..models import Plant, Subscription
 from ..config import BREVO_API_KEY, SENDER_EMAIL
 
 logger = logging.getLogger('uvicorn.error')
-logger.setLevel(logging.DEBUG)
 
 async def send_email(API_KEY: str):
     logger.debug("Running daily email job...")
@@ -23,7 +22,7 @@ async def send_email(API_KEY: str):
     needs_water: list[str] = []
     for plant in plants:
         next_water = plant.last_watered + timedelta(days=plant.watering_interval)
-        if next_water.date() == datetime.now().date():
+        if next_water.date() == datetime.now(timezone.utc).date():
             needs_water.append(plant.name)
 
     if len(needs_water) == 0 or len(subs) == 0:

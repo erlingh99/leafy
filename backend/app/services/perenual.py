@@ -5,7 +5,7 @@ from typing import Any
 import logging
 from PIL import Image
 from pydantic import ValidationError
-import requests
+import httpx
 from fastapi import status
 from io import BytesIO
 
@@ -24,33 +24,33 @@ PERENUAL_TIMEOUT = 20  # seconds
 _HARDINESS_OVERLAY_OPACITY = 0.8
 
 logger = logging.getLogger('uvicorn.error')
-logger.setLevel(logging.DEBUG)
+
 
 class PerenualConfigurationError(RuntimeError):
     """Raised when the Perenual client is misconfigured."""
 
 
-def get_perenual_species_id(species_query: str) -> SpeciesListData:
+async def get_perenual_species_id(species_query: str) -> SpeciesListData:
     """
     Get the Perenual species ID for a species query.
-    
+
     Steps:
     1. Search the species list endpoint using the provided query.
     2. Select the entry with the lowest ID.
-    
+
     Returns the species ID.
     """
     if not species_query:
         raise ValueError("Species query must be provided to enrich plant data.")
+    if not PERENUAL_API_KEY:
+        raise PerenualConfigurationError("PERENUAL_API_KEY is not configured in the environment.")
 
-    with _build_session() as session:
-        species_candidates = _search_species(session, species_query)
-        species = _select_lowest_id(species_candidates.data)
-    
-    return species
+    async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
+        species_candidates = await _search_species(client, species_query)
+    return _select_lowest_id(species_candidates.data)
 
 
-def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
+async def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
     """
     Fetch the enrichment payload for a species.
 
@@ -58,14 +58,12 @@ def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
     1. If species.id is above 3000, skip subsequent API calls and return minimal data.
     2. Otherwise, fetch the species details for that ID.
     3. Fetch the care guide list for the same species.
-    
+
     Args:
         species: The species data from the species list endpoint
     """
-
-    # If species_id > 3000, subsequent API calls will fail, so return minimal data
     if species.id > 3000:
-        logger.warning(f"Species ID {species.id} is above 3000, skipping details and care guides API calls")
+        logger.warning("Species ID %s is above 3000, skipping details and care guides API calls", species.id)
         return Species(
             perenual_id=species.id,
             details=SpeciesDetailsResponse(
@@ -82,13 +80,14 @@ def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
             ),
         )
 
-    with _build_session() as session:
-        details = _fetch_details(session, species.id)
-        care_guides = _fetch_care_guides(session, species.id)
+    if not PERENUAL_API_KEY:
+        raise PerenualConfigurationError("PERENUAL_API_KEY is not configured in the environment.")
 
-    care_guide = None
-    if care_guides and len(care_guides) > 0:
-        care_guide = care_guides[0]
+    async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
+        details = await _fetch_details(client, species.id)
+        care_guides = await _fetch_care_guides(client, species.id)
+
+    care_guide = care_guides[0] if care_guides else None
 
     return Species(
         perenual_id=species.id,
@@ -97,24 +96,27 @@ def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
     )
 
 
-def _build_session() -> requests.Session:
-    if not PERENUAL_API_KEY:
-        raise PerenualConfigurationError(
-            "PERENUAL_API_KEY is not configured in the environment."
-        )
+async def get_hardiness_base_maps() -> list[tuple[int, bytes]]:
+    base_maps = []
+    async with httpx.AsyncClient() as client:
+        for i in range(0, 14):
+            url = f"{PERENUAL_BASE_URL.rstrip('/api/')}/storage/image/hardiness/lg/{i}.png"
+            try:
+                response = await client.get(url, timeout=PERENUAL_TIMEOUT)
+                response.raise_for_status()
+            except httpx.HTTPError as exc:
+                raise ValueError(f"Perenual API call to get hardiness-map base map {i} failed.") from exc
+            base_maps.append((i, response.content))
+    return base_maps
 
-    session = requests.Session()
-    session.headers.update({"Accept": "application/json"})
-    return session
 
-
-def _search_species(session: requests.Session, query: str) -> SpeciesListResponse:
-    logger.debug(f"Getting info about species {query}")
-    payload = _request(session, "/v2/species-list", params={"q": query})
+async def _search_species(client: httpx.AsyncClient, query: str) -> SpeciesListResponse:
+    logger.debug("Getting info about species %s", query)
+    payload = await _request(client, "/v2/species-list", params={"q": query})
     try:
         response = SpeciesListResponse.model_validate(payload)
     except ValidationError as exc:
-        logger.error(f"{exc.errors()}")
+        logger.error("Validation error: %s", exc.errors())
         raise ValueError("Bad species list API response") from exc
 
     if not response.data:
@@ -139,48 +141,48 @@ def _select_lowest_id(candidates: list[SpeciesListData]) -> SpeciesListData:
     return candidate
 
 
-def _fetch_details(session: requests.Session, species_id: int) -> SpeciesDetailsResponse:
-    logger.debug(f"Getting details for species {species_id}")
-    payload = _request(session, f"/v2/species/details/{species_id}")
-    try:        
+async def _fetch_details(client: httpx.AsyncClient, species_id: int) -> SpeciesDetailsResponse:
+    logger.debug("Getting details for species %s", species_id)
+    payload = await _request(client, f"/v2/species/details/{species_id}")
+    try:
         return SpeciesDetailsResponse.model_validate(payload)
     except ValidationError as exc:
-        logger.error(f"{exc.errors()}")
+        logger.error("Validation error: %s", exc.errors())
         raise ValueError("Bad species details API response") from exc
 
 
-def _fetch_care_guides(
-    session: requests.Session, species_id: int
+async def _fetch_care_guides(
+    client: httpx.AsyncClient, species_id: int
 ) -> list[SpeciesGuideData]:
-    logger.debug(f"Getting care guide for id {species_id}")
-    payload = _request(
-        session,
+    logger.debug("Getting care guide for id %s", species_id)
+    payload = await _request(
+        client,
         "/species-care-guide-list",
         params={"species_id": species_id},
     )
     try:
         response = SpeciesGuideResponse.model_validate(payload)
     except ValidationError as exc:
-        logger.error(f"{exc.errors()}")
+        logger.error("Validation error: %s", exc.errors())
         raise ValueError("Bad species care guide API response") from exc
     return response.data or []
 
 
-def create_hardiness_map(hardiness_maps: list[HardinessMap]) -> Image.Image:
+def create_hardiness_map(hardiness_maps: list[HardinessMap]) -> "Image.Image":
     """
     Create a hardiness map from a list of hardiness maps.
-    
+
     Args:
         hardiness_maps: The list of hardiness maps
-    
+
     Returns:
         The hardiness map image
     """
-    logger.debug(f"Stitching together {len(hardiness_maps)} maps")
+    logger.debug("Stitching together %s maps", len(hardiness_maps))
     hardiness_maps.sort(key=lambda x: x.id)
-    base = Image.open(BytesIO(hardiness_maps[0].image)).convert("RGBA")
-    canvas = Image.new("RGBA", base.size)
-    canvas.paste(base, (0, 0))
+    with Image.open(BytesIO(hardiness_maps[0].image)).convert("RGBA") as base:
+        canvas = Image.new("RGBA", base.size)
+        canvas.paste(base, (0, 0))
     for hardiness_map in hardiness_maps[1:]:
         with Image.open(BytesIO(hardiness_map.image)).convert("RGBA") as im:
             r, g, b, a = im.split()
@@ -190,37 +192,26 @@ def create_hardiness_map(hardiness_maps: list[HardinessMap]) -> Image.Image:
     return canvas
 
 
-def get_hardiness_base_maps() -> list[tuple[int, bytes]]:
-    base_maps = []
-    for i in range(0, 14):
-        url = f"{PERENUAL_BASE_URL.rstrip('/api/')}/storage/image/hardiness/lg/{i}.png"
-        try:
-            response = requests.get(url, timeout=PERENUAL_TIMEOUT)
-            response.raise_for_status()
-        except Exception as exc:
-            raise ValueError(f"Perenual API call to get hardiness-map base map {i} failed.") from exc
-
-        response_bytes = response.content
-        base_maps.append((i, response_bytes))
-    return base_maps
-
-
-def _request(
-    session: requests.Session,
+async def _request(
+    client: httpx.AsyncClient,
     path: str,
     params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    params = params.copy() if params else {}
-    params["key"] = PERENUAL_API_KEY
+    request_params: dict[str, Any] = params.copy() if params else {}
+    request_params["key"] = PERENUAL_API_KEY
 
     url = f"{PERENUAL_BASE_URL.rstrip('/')}{path}"
 
     try:
-        response = session.get(url, params=params, timeout=PERENUAL_TIMEOUT)
+        response = await client.get(url, params=request_params, timeout=PERENUAL_TIMEOUT)
         response.raise_for_status()
-    except requests.RequestException as exc:
-        response_obj = getattr(exc, "response", None)
-        status_code = response_obj.status_code if response_obj is not None else status.HTTP_502_BAD_GATEWAY
-        raise ValueError(f"Perenual API call to {path} failed with status {status_code}.") from exc
+    except httpx.HTTPStatusError as exc:
+        raise ValueError(
+            f"Perenual API call to {path} failed with status {exc.response.status_code}."
+        ) from exc
+    except httpx.RequestError as exc:
+        raise ValueError(
+            f"Perenual API call to {path} failed with status {status.HTTP_502_BAD_GATEWAY}."
+        ) from exc
 
     return response.json()

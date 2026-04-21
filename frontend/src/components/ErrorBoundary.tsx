@@ -13,6 +13,18 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false, error: null };
 
+  private handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+    console.error("Unhandled promise rejection:", event.reason);
+  };
+
+  componentDidMount() {
+    window.addEventListener('unhandledrejection', this.handleUnhandledRejection);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('unhandledrejection', this.handleUnhandledRejection);
+  }
+
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }

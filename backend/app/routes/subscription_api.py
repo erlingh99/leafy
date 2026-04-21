@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,13 +10,13 @@ from ..subscription import send_welcome_email
 
 subscription_router = APIRouter(prefix="/api/subscriptions", tags=["subscriptions"])
 
-@subscription_router.get("", response_model=List[Subscription])
-async def get_subscriptions(db: AsyncSession = Depends(get_db)) -> List[Subscription]:
+@subscription_router.get("", response_model=list[Subscription])
+async def get_subscriptions(db: AsyncSession = Depends(get_db)) -> list[Subscription]:
     subscriptions = await load_subscriptions(db)
     return list(subscriptions.values())
 
 @subscription_router.get("/{subscription_id}", response_model=Subscription)
-async def get_subscription(subscription_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_subscription(subscription_id: UUID, db: AsyncSession = Depends(get_db)) -> Subscription:
     subscriptions = await load_subscriptions(db)
     if subscription_id in subscriptions:
         return subscriptions[subscription_id]
@@ -39,7 +38,7 @@ async def set_subscription(
     return {"message": "Subscription saved successfully"}
 
 @subscription_router.patch("/{subscription_id}")
-async def update_subscription(subscription_id: UUID, partial_subscription: SubscriptionUpdate, db: AsyncSession = Depends(get_db)):
+async def update_subscription(subscription_id: UUID, partial_subscription: SubscriptionUpdate, db: AsyncSession = Depends(get_db)) -> dict[str, str]:
     subscriptions = await load_subscriptions(db)
     if subscription_id in subscriptions:
         subscription = subscriptions[subscription_id]
