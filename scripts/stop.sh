@@ -1,1 +1,4 @@
-sudo docker compose down 
+#!/bin/bash
+set -eo pipefail
+
+sudo docker compose down
