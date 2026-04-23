@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Exit on error
-set -e
+set -eo pipefail
 
 # Colors for output
 BLUE='\033[0;34m'
