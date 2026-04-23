@@ -7,6 +7,9 @@ on:
 jobs:
   backend-checks:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
@@ -32,6 +35,9 @@ jobs:
 
   frontend-checks:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx

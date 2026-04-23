@@ -9,6 +9,8 @@ jobs:
     name: Deploy to staging
     runs-on: ubuntu-latest
     environment: leafy
+    permissions:
+      contents: read
 
     steps:
       - name: Connect to Tailscale
@@ -24,12 +26,12 @@ jobs:
           mkdir -p ~/.ssh/
           echo "$SSH_KEY" > ~/.ssh/staging.key
           chmod 600 ~/.ssh/staging.key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
           cat >>~/.ssh/config <<END
           Host staging
             HostName $SSH_HOST
             User $SSH_USER
             IdentityFile ~/.ssh/staging.key
-            StrictHostKeyChecking no
           END
         env:
           SSH_USER: ${{ secrets.STAGING_SSH_USER }}
@@ -37,4 +39,4 @@ jobs:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
       - name: Restart application
-        run: ssh staging './leafy/scripts/restart.sh'
+        run: ssh staging 'cd ./leafy && ./scripts/restart.sh'
