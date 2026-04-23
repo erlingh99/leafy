@@ -155,7 +155,10 @@ type StaticTranslationKeys =
   | "more"
   | "notFound404"
   | "notFoundPageNotFound"
-  | "notFoundReturnToHome";
+  | "notFoundReturnToHome"
+  | "locale"
+  | "lightMode"
+  | "darkMode";
 
 type FunctionTranslationKeys =
   | "plantAddedDescription"

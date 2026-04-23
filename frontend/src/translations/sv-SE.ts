@@ -161,4 +161,7 @@ export const sv_SE: Translations = {
   notFound404: "404",
   notFoundPageNotFound: "Hoppsan! Sidan hittades inte",
   notFoundReturnToHome: "Tillbaka till hem",
+  locale: "sv-SE",
+  lightMode: "Ljust läge",
+  darkMode: "Mörkt läge",
 };

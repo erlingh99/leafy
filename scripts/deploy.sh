@@ -33,5 +33,8 @@ fi
 echo -e "${BLUE}📝 Checking logs...${NC}"
 sudo docker compose logs
 
+echo -e "${BLUE}🧹 Cleaning up old images...${NC}"
+sudo docker image prune -f
+
 exit $status
  

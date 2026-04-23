@@ -26,59 +26,33 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
   const [isSpeciesOpen, setIsSpeciesOpen] = useState(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
-  const [hardinessMapUrl, setHardinessMapUrl] = useState<string | null>(null);
-  const [isLoadingMap, setIsLoadingMap] = useState(false);
-  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const hasFetchedRef = useRef(false);
-  const hasLoadedMapRef = useRef(false);
 
   useEffect(() => {
-    if (isSpeciesOpen && !speciesData && !isLoadingSpecies && !hasFetchedRef.current && plant.perenual_species_id) {
-      hasFetchedRef.current = true;
-      setIsLoadingSpecies(true);
-      fetchSpecies(plant.perenual_species_id).then((data) => {
-        setSpeciesData(data);
-        setIsLoadingSpecies(false);
-      });
-    }
-  }, [isSpeciesOpen, speciesData, isLoadingSpecies, plant.perenual_species_id, fetchSpecies]);
+    if (!isSpeciesOpen || hasFetchedRef.current || !plant.perenual_species_id) return;
 
-  // Reset the ref and map URL when the collapsible is closed
+    hasFetchedRef.current = true;
+    setIsLoadingSpecies(true);
+    let cancelled = false;
+
+    fetchSpecies(plant.perenual_species_id).then((data) => {
+      if (cancelled) return;
+      setSpeciesData(data);
+      setIsLoadingSpecies(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setIsLoadingSpecies(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [isSpeciesOpen, plant.perenual_species_id, fetchSpecies]);
+
+  // Reset fetch gate when the collapsible is closed
   useEffect(() => {
     if (!isSpeciesOpen) {
       hasFetchedRef.current = false;
-      setHardinessMapUrl(null);
-      setIsLoadingMap(false);
-      setIsMapDialogOpen(false);
-      hasLoadedMapRef.current = false;
     }
   }, [isSpeciesOpen]);
-
-  // Reset map URL when species data changes
-  useEffect(() => {
-    setHardinessMapUrl(null);
-    setIsLoadingMap(false);
-    setIsMapDialogOpen(false);
-    hasLoadedMapRef.current = false;
-  }, [speciesData?.perenual_id]);
-
-  // Reset map ref when dialog closes
-  useEffect(() => {
-    if (!isMapDialogOpen) {
-      hasLoadedMapRef.current = false;
-    }
-  }, [isMapDialogOpen]);
-
-  // Load map when dialog opens
-  useEffect(() => {
-    if (isMapDialogOpen && !hardinessMapUrl && !isLoadingMap && speciesData?.perenual_id && !hasLoadedMapRef.current) {
-      hasLoadedMapRef.current = true;
-      setIsLoadingMap(true);
-      const mapUrl = `/api/plants/species/${speciesData.perenual_id}/hardiness-map`;
-      setHardinessMapUrl(mapUrl);
-      // Keep isLoadingMap as true - it will be set to false by onLoad or onError handlers
-    }
-  }, [isMapDialogOpen, speciesData?.perenual_id, hardinessMapUrl, isLoadingMap]);
 
 
   return (
@@ -89,9 +63,9 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
       <div className="p-6">
         <div className="flex gap-4 mb-6">
           <div className="flex-shrink-0">
-            {plant.image ? (
+            {plant.thumbnail_url ? (
               <img
-                src={plant.image}
+                src={plant.thumbnail_url}
                 alt={plant.name}
                 className="w-24 h-32 object-cover rounded-full"
                 style={{ borderRadius: "60% / 60%" }}
@@ -125,7 +99,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-muted-foreground">
-                  {t.watered}: {new Date(plant.last_watered).toLocaleDateString("en-GB")}
+                  {t.watered}: {new Date(plant.last_watered).toLocaleDateString(t.locale)}
                 </span>
               </div>
               <div className="text-sm font-medium">
