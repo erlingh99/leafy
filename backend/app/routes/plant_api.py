@@ -188,6 +188,10 @@ async def set_plant(
         processed_plant = plant
 
     await save_plant(db, processed_plant, thumbnail=thumbnail_bytes)
+    # Commit before returning so the thumbnail is visible when the client immediately
+    # re-requests it, and so the background enrichment task can find the plant.
+    # The get_db dependency will attempt a second commit on cleanup, which is a no-op.
+    await db.commit()
 
     background_tasks.add_task(
         fetch_plant_info_and_update, processed_plant.id, processed_plant.species
@@ -225,6 +229,9 @@ async def update_plant(
     updated_plant = Plant(**update_data)
     updated_plant.updated_at = datetime.now(timezone.utc)
     await db_update_plant(db, updated_plant, thumbnail=thumbnail_update, set_thumbnail=set_thumbnail)
+    # Commit before returning so the background enrichment task can write without
+    # deadlocking against this session's still-open write transaction.
+    await db.commit()
 
     if "species" in partial_update:
         background_tasks.add_task(
@@ -296,6 +303,7 @@ async def _fetch_and_cache_species(species_name: str) -> int:
     except Exception as exc:
         if not fut.done():
             fut.set_exception(exc)
+            fut.exception()  # mark as retrieved so asyncio doesn't log "never retrieved"
         raise
     finally:
         _species_futures.pop(species_name, None)

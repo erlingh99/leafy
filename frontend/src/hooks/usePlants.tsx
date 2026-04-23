@@ -12,6 +12,36 @@ export const usePlants = (t: Translations) => {
 
   const plantsToastRef = useRef<ReturnType<typeof delayedToast> | null>(null);
 
+  const pollingTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const pollForSpeciesRef = useRef<(plantId: string, attempts: number) => void>();
+
+  useEffect(() => () => { pollingTimers.current.forEach(clearTimeout); }, []);
+
+  const pollForSpecies = useCallback((plantId: string, attempts = 3) => {
+    if (attempts <= 0) return;
+    const tid = setTimeout(async () => {
+      pollingTimers.current.delete(plantId);
+      try {
+        const res = await fetchWithTimeout(`/api/plants/${plantId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) return;
+        const updated = await res.json() as Plant;
+        if (updated.perenual_species_id) {
+          queryClient.setQueryData<Plant[]>(['plants'], old =>
+            old?.map(p => p.id === plantId ? updated : p) ?? old
+          );
+        } else {
+          pollForSpeciesRef.current?.(plantId, attempts - 1);
+        }
+      } catch { /* give up on error */ }
+    }, 3000);
+    pollingTimers.current.set(plantId, tid);
+  }, [queryClient]);
+
+  pollForSpeciesRef.current = pollForSpecies;
+
   const { data: plants = [], isPending: isPlantsPending } = useQuery({
     queryKey: ['plants'],
     queryFn: async () => {
@@ -74,6 +104,7 @@ export const usePlants = (t: Translations) => {
         if (!old) return [newPlant];
         return [...old, newPlant];
       });
+      pollForSpecies(newPlant.id);
       toast({
         title: t.plantAdded,
         description: t.plantAddedDescription(variables.name),
@@ -108,6 +139,9 @@ export const usePlants = (t: Translations) => {
         if (!old) return old;
         return old.map(p => p.id === variables.plantId ? updatedPlant : p);
       });
+      if ('species' in variables.updatePayload && !updatedPlant.perenual_species_id) {
+        pollForSpecies(updatedPlant.id);
+      }
       toast({
         title: t.plantUpdated,
         description: t.plantUpdatedDescription(variables.updatePayload.name || "Plant"),

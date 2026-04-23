@@ -34,6 +34,10 @@ async def set_subscription(
     db: AsyncSession = Depends(get_db)
 ):
     await save_subscription(db, subscription)
+    # Commit before returning so the subscription is visible when the client
+    # refetches the list immediately after receiving the success response.
+    # The get_db dependency will attempt a second commit on cleanup, which is a no-op.
+    await db.commit()
     background_tasks.add_task(send_welcome_email, subscription, BREVO_API_KEY)
     return {"message": "Subscription saved successfully"}
 

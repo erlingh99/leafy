@@ -1,23 +1,22 @@
-"""
-SQLAlchemy database setup and session management
-"""
 from typing import AsyncGenerator
-
+import asyncio
+from alembic.config import Config
+from alembic import command
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from ..config import DATABASE_URL
+from ..config import DATABASE_PATH, MIGRATIONS_PATH
 
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(DATABASE_PATH)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):
     pass
 
 async def init_db():
-    """Initialize the database, creating all tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    cfg = Config(str(MIGRATIONS_PATH))
+    await asyncio.to_thread(command.upgrade, cfg, "head")
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Get a database session."""
@@ -25,6 +24,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session
             await session.commit()
-        except Exception:
+        except SQLAlchemyError:
             await session.rollback()
             raise

@@ -29,21 +29,23 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (isSpeciesOpen && !speciesData && !isLoadingSpecies && !hasFetchedRef.current && plant.perenual_species_id) {
-      hasFetchedRef.current = true;
-      setIsLoadingSpecies(true);
-      let cancelled = false;
-      fetchSpecies(plant.perenual_species_id).then((data) => {
-        if (!cancelled) {
-          setSpeciesData(data);
-          setIsLoadingSpecies(false);
-        }
-      }).catch(() => {
-        if (!cancelled) setIsLoadingSpecies(false);
-      });
-      return () => { cancelled = true; };
-    }
-  }, [isSpeciesOpen, speciesData, isLoadingSpecies, plant.perenual_species_id, fetchSpecies]);
+    if (!isSpeciesOpen || hasFetchedRef.current || !plant.perenual_species_id) return;
+
+    hasFetchedRef.current = true;
+    setIsLoadingSpecies(true);
+    let cancelled = false;
+
+    fetchSpecies(plant.perenual_species_id).then((data) => {
+      if (cancelled) return;
+      setSpeciesData(data);
+      setIsLoadingSpecies(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setIsLoadingSpecies(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [isSpeciesOpen, plant.perenual_species_id, fetchSpecies]);
 
   // Reset fetch gate when the collapsible is closed
   useEffect(() => {

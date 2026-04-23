@@ -3,10 +3,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
 import logging
 from contextlib import asynccontextmanager
-from .routes import plant_api, subscription_api
+from .routes import plant_api, subscription_api, health_api
 from .database import init_db, save_hardiness_map, get_hardiness_map, async_session_maker
 from .subscription import send_email
 from .config import BREVO_API_KEY, SENDER_EMAIL
@@ -47,6 +46,7 @@ async def lifespan(app: FastAPI):
         async with async_session_maker() as db:
             for idx, map in basemaps:
                 await save_hardiness_map(db, hardiness_map=HardinessMap(id=idx, image=map))
+            await db.commit()
 
     logger.debug("Initialized")
 
@@ -66,6 +66,7 @@ app.mount("/assets", StaticFiles(directory="../frontend/dist/assets"), name="ass
 # Include API routers
 app.include_router(plant_api.plant_router)
 app.include_router(subscription_api.subscription_router)
+app.include_router(health_api.health_router)
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def serveIcon():

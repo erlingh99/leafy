@@ -112,22 +112,31 @@ export const useSubscription = (t: Translations) => {
         throw new Error('Failed to delete subscription');
       }
     },
-    onSuccess: (_, id) => {
-      const subscription = subscriptions.find((s) => s.id === id);
-      const promise = queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['subscriptions'] });
+      const previous = queryClient.getQueryData<Subscription[]>(['subscriptions']);
+      queryClient.setQueryData<Subscription[]>(['subscriptions'], (old) =>
+        old?.filter((s) => s.id !== id) ?? old
+      );
+      return { previous };
+    },
+    onSuccess: (_, id, context) => {
+      const subscription = context?.previous?.find((s) => s.id === id);
       toast({
         title: t.subscriptionDeleted,
         description: t.subscriptionDeletedDescription(subscription?.name || ""),
       });
-      return promise;
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['subscriptions'], context.previous);
+      }
       toast({
         title: t.errorDeletingSubscription,
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const addSubscription = async (subscriptionData: Partial<Subscription>): Promise<boolean> => {

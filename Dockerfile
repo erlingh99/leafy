@@ -31,10 +31,14 @@ COPY ./backend ./backend
 # Copy frontend build
 COPY --from=frontend-builder /app/dist ./frontend/dist
 
+RUN apk update && apk add curl
 # Install tzdata (time zone database)
 RUN apk add --no-cache tzdata
 # Set the desired time zone
 ENV TZ=Europe/Berlin
+
+HEALTHCHECK --interval=5m --timeout=30s --start-period=5s --retries=3 \
+    CMD curl "http://localhost:${BACKEND_PORT}/api/health"
 
 WORKDIR /app/backend
 CMD uvicorn app.main:app --host "${BACKEND_HOST}" --port "${BACKEND_PORT}"
