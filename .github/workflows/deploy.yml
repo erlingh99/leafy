@@ -8,6 +8,7 @@ jobs:
   deploy:
     name: Deploy to staging
     runs-on: ubuntu-latest
+    environment: leafy
 
     steps:
       - name: Connect to Tailscale
