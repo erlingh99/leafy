@@ -37,6 +37,3 @@ jobs:
 
       - name: Restart application
         run: ssh staging './leafy/scripts/restart.sh'
-
-      - name: Clean up old images
-        run: ssh staging 'docker image prune -f'
