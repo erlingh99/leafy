@@ -10,6 +10,7 @@ def falsy_to_none(x: T) -> T | None:
 LeniantOptional = Annotated[T | None, BeforeValidator(falsy_to_none)]
 
 
+
 ###SPECIES_LIST
 
 class SpeciesListData(BaseModel):
@@ -81,7 +82,6 @@ class SpeciesDetailsResponse(BaseModel):
     pruning_count: LeniantOptional[PruningCount] = None
     seeds: bool | None = None
     maintenance: str | None = None
-    care_guides: str | None = None
     soil: list[str] | None = None
     growth_rate: str | None = None
     drought_tolerant: bool | None = None

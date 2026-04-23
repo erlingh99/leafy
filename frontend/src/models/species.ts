@@ -53,7 +53,6 @@ export interface SpeciesDetailsResponse {
   pruning_count?: PruningCount | null;
   seeds?: boolean | null;
   maintenance?: string | null;
-  care_guides?: string | null;
   soil?: string[] | null;
   growth_rate?: string | null;
   drought_tolerant?: boolean | null;

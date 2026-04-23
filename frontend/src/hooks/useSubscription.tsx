@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast, delayedToast } from "./useToast";
+import { fetchWithTimeout } from "./fetchWithTimeout";
 import { Translations } from "@/translations/types";
 import { Subscription } from "@/models/subscription";
 
@@ -12,7 +13,7 @@ export const useSubscription = (t: Translations) => {
   const { data: subscriptions = [] } = useQuery({
     queryKey: ['subscriptions'],
     queryFn: async () => {
-      const response = await fetch(`/api/subscriptions`, {
+      const response = await fetchWithTimeout(`/api/subscriptions`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -26,14 +27,14 @@ export const useSubscription = (t: Translations) => {
         throw new Error('Failed to fetch subscriptions');
       }
 
-      return response.json() as Promise<Subscription[]>;
+      return (await response.json()) as Subscription[];
     },
   });
 
   // Mutation for adding a subscription
   const addSubscriptionMutation = useMutation({
     mutationFn: async (subscriptionData: Partial<Subscription>) => {
-      const response = await fetch('/api/subscriptions', {
+      const response = await fetchWithTimeout('/api/subscriptions', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +69,7 @@ export const useSubscription = (t: Translations) => {
   // Mutation for updating a subscription
   const updateSubscriptionMutation = useMutation({
     mutationFn: async ({ id, subscription }: { id: string, subscription: Partial<Subscription> }) => {
-      const response = await fetch(`/api/subscriptions/${id}`, {
+      const response = await fetchWithTimeout(`/api/subscriptions/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ export const useSubscription = (t: Translations) => {
   // Mutation for deleting a subscription
   const deleteSubscriptionMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/subscriptions/${id}`, {
+      const response = await fetchWithTimeout(`/api/subscriptions/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -111,22 +112,31 @@ export const useSubscription = (t: Translations) => {
         throw new Error('Failed to delete subscription');
       }
     },
-    onSuccess: (_, id) => {
-      const subscription = subscriptions.find((s) => s.id === id);
-      const promise = queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['subscriptions'] });
+      const previous = queryClient.getQueryData<Subscription[]>(['subscriptions']);
+      queryClient.setQueryData<Subscription[]>(['subscriptions'], (old) =>
+        old?.filter((s) => s.id !== id) ?? old
+      );
+      return { previous };
+    },
+    onSuccess: (_, id, context) => {
+      const subscription = context?.previous?.find((s) => s.id === id);
       toast({
         title: t.subscriptionDeleted,
         description: t.subscriptionDeletedDescription(subscription?.name || ""),
       });
-      return promise;
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['subscriptions'], context.previous);
+      }
       toast({
         title: t.errorDeletingSubscription,
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const addSubscription = async (subscriptionData: Partial<Subscription>): Promise<boolean> => {

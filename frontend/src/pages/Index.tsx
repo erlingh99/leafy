@@ -19,7 +19,7 @@ const Index = () => {
   const [language, setLanguage] = useState<Language>("en");
   const t = translations[language];
 
-  const { plants, addPlant, updatePlant, waterPlant, deletePlant, waterAllPlants, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
+  const { plants, isAddingPlant, addPlant, updatePlant, waterPlant, deletePlant, waterAllPlants, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
 
   const openAddDialog = () => {
@@ -76,6 +76,7 @@ const Index = () => {
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenAddDialog={openAddDialog}
+          isAddingPlant={isAddingPlant}
           t={t}
         />
 

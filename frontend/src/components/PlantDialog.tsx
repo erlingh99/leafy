@@ -29,7 +29,8 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
     species: editingPlant?.species || "",
     species_username: editingPlant?.species_username || "",
     wateringInterval: editingPlant?.watering_interval.toString() || "7",
-    image: editingPlant?.image || "",
+    // For existing plants we show the image URL for preview; new uploads use data URI
+    image: editingPlant?.image_url || "",
   });
   const [originalData, setOriginalData] = useState<{
     name: string;
@@ -38,10 +39,20 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
     wateringInterval: string;
     image: string;
   } | null>(null);
+  const [imageChanged, setImageChanged] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: t.invalidFileType || "Invalid file type",
+          description: t.invalidFileTypeDescription || "Please select an image file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: t.imageTooLarge,
@@ -53,7 +64,11 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPlantData({ ...plantData, image: reader.result as string });
+        const result = reader.result;
+        if (typeof result === "string") {
+          setPlantData(prev => ({ ...prev, image: result }));
+          setImageChanged(true);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -61,6 +76,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
 
   const removeImage = () => {
     setPlantData({ ...plantData, image: "" });
+    setImageChanged(true);
   };
 
   const handleSubmit = async () => {
@@ -169,10 +185,8 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
           changedFields.species_username = plantData.species_username || "";
         }
         
-        const currentImage = plantData.image || "";
-        const originalImage = originalData.image || "";
-        if (currentImage !== originalImage) {
-          // Send empty string to clear, or the value if set
+        // Only include image in the payload if the user changed it (new upload or cleared)
+        if (imageChanged) {
           changedFields.image = plantData.image || "";
         }
       }
@@ -202,10 +216,11 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         species: editingPlant.species,
         species_username: editingPlant.species_username ?? "",
         wateringInterval: editingPlant.watering_interval.toString(),
-        image: editingPlant.image || "",
+        image: editingPlant.image_url || "",
       };
       setPlantData(initialData);
       setOriginalData(initialData);
+      setImageChanged(false);
     } else {
       setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "" });
       setOriginalData(null);

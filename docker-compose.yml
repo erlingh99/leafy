@@ -1,21 +1,24 @@
 services:
   leafy:
-    dns:
-      - 192.168.0.2
     container_name: leafy_backend
-    hostname: leafy
-    networks:
-      - proxy
+    dns:
+      - ${DNS_IP}
     build:
       dockerfile: Dockerfile
       args:
         BACKEND_HOST: "0.0.0.0"
         BACKEND_PORT: "80"
+    env_file:
+      - .env
+    networks:
+      - proxy
     volumes:
-      - ./backend/:/app/backend/
+      - leafy_data:/app/data
     restart: unless-stopped
 
 networks:
   proxy:
     external: true
 
+volumes:
+  leafy_data:

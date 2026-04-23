@@ -17,6 +17,7 @@ interface HeaderProps {
   theme: string;
   onToggleTheme: () => void;
   onOpenAddDialog: () => void;
+  isAddingPlant?: boolean;
   t: Translations;
 }
 
@@ -30,6 +31,7 @@ export const Header = ({
   theme,
   onToggleTheme,
   onOpenAddDialog,
+  isAddingPlant = false,
   t,
 }: HeaderProps) => {
 
@@ -73,7 +75,7 @@ export const Header = ({
             </div>
 
             <DialogTrigger asChild>
-              <Button className="gap-2" onClick={onOpenAddDialog}>
+              <Button className="gap-2" onClick={onOpenAddDialog} disabled={isAddingPlant}>
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">{t.addPlant}</span>
               </Button>

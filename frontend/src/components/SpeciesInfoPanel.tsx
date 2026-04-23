@@ -462,7 +462,7 @@ export const SpeciesInfoPanel = ({ speciesData, t }: SpeciesInfoPanelProps) => {
                     </span>
                 )}
                 {details.edible_fruit !== null && details.edible_fruit !== undefined && (
-                    <span className="px-2 py-1 bg-secondary rounded text-xs flex items-center gap-1">
+                    <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${details.edible_fruit ? "bg-green-600/20 text-green-600" : "bg-secondary"}`}>
                         <Cherry className="h-3 w-3" />
                         {details.edible_fruit ? (t.speciesEdibleFruit || "Edible Fruit") : (t.speciesNotEdibleFruit || "Not Edible Fruit")}
                     </span>
@@ -474,7 +474,7 @@ export const SpeciesInfoPanel = ({ speciesData, t }: SpeciesInfoPanelProps) => {
                     </span>
                 )}
                 {details.edible_leaf !== null && details.edible_leaf !== undefined && (
-                    <span className="px-2 py-1 bg-secondary rounded text-xs flex items-center gap-1">
+                    <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${details.edible_leaf ? "bg-green-600/20 text-green-600" : "bg-secondary"}`}>
                         <Leaf className="h-3 w-3" />
                         {details.edible_leaf ? (t.speciesEdibleLeaf || "Edible Leaf") : (t.speciesNotEdibleLeaf || "Not Edible Leaf")}
                     </span>
@@ -498,7 +498,7 @@ export const SpeciesInfoPanel = ({ speciesData, t }: SpeciesInfoPanelProps) => {
                     </span>
                 )}
                 {details.invasive !== null && details.invasive !== undefined && (
-                    <span className="px-2 py-1 bg-destructive/20 text-destructive rounded text-xs flex items-center gap-1">
+                    <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${details.invasive ? "bg-destructive/20 text-destructive" : "bg-secondary"}`}>
                         <AlertTriangle className="h-3 w-3" />
                         {details.invasive ? (t.speciesInvasive || "Invasive") : (t.speciesNotInvasive || "Not Invasive")}
                     </span>
@@ -510,21 +510,21 @@ export const SpeciesInfoPanel = ({ speciesData, t }: SpeciesInfoPanelProps) => {
                     </span>
                 )}
                 {details.cuisine !== null && details.cuisine !== undefined && (
-                    <span className="px-2 py-1 bg-secondary rounded text-xs flex items-center gap-1">
+                    <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${details.cuisine ? "bg-green-600/20 text-green-600" : "bg-secondary"}`}>
                         <Utensils className="h-3 w-3" />
                         {details.cuisine ? (t.speciesCuisine || "Culinary Use") : (t.speciesNoCuisine || "No Culinary Use")}
                     </span>
                 )}
-                {details.poisonous_to_humans && (
-                    <span className="px-2 py-1 bg-destructive/20 text-destructive rounded text-xs flex items-center gap-1">
+                {details.poisonous_to_humans !== null && details.poisonous_to_humans !== undefined && (
+                    <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${details.poisonous_to_humans ? "bg-destructive/20 text-destructive" : "bg-secondary"}`}>
                         <AlertTriangle className="h-3 w-3" />
-                        {t.speciesPoisonousHumans || "Poisonous to Humans"}
+                        {details.poisonous_to_humans ? (t.speciesPoisonousHumans || "Poisonous to Humans") : (t.speciesNotPoisonousHumans || "Safe for Humans")}
                     </span>
                 )}
-                {details.poisonous_to_pets && (
-                    <span className="px-2 py-1 bg-destructive/20 text-destructive rounded text-xs flex items-center gap-1">
+                {details.poisonous_to_pets !== null && details.poisonous_to_pets !== undefined && (
+                    <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${details.poisonous_to_pets ? "bg-destructive/20 text-destructive" : "bg-secondary"}`}>
                         <AlertTriangle className="h-3 w-3" />
-                        {t.speciesPoisonousPets || "Poisonous to Pets"}
+                        {details.poisonous_to_pets ? (t.speciesPoisonousPets || "Poisonous to Pets") : (t.speciesNotPoisonousPets || "Safe for Pets")}
                     </span>
                 )}
             </div>
