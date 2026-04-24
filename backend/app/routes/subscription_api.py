@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import BREVO_API_KEY
 from ..models import Subscription, SubscriptionUpdate
 from ..database import get_db, load_subscriptions, save_subscription, delete_subscription as db_delete_subscription, update_subscription as db_update_subscription
-from ..subscription import send_welcome_email
+from ..services import send_welcome_email
 
 subscription_router = APIRouter(prefix="/api/subscriptions", tags=["subscriptions"])
 
