@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MIGRATIONS_PATH = Path(__file__).parent.parent / "alembic.ini"
+FRONTEND_DIST = Path("../frontend/dist")
 DATABASE_PATH = "sqlite+aiosqlite:////app/data/plants.db"
 PERENUAL_BASE_URL = "https://perenual.com/api"
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
