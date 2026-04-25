@@ -8,4 +8,4 @@ RUN uvx ty check && \
     uvx ruff check
 
 FROM base AS test
-RUN uvx pytest
+RUN uv run pytest
