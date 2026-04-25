@@ -69,6 +69,7 @@ export const SpeciesInfoPanel = ({ speciesData, t }: SpeciesInfoPanelProps) => {
 
     // Reset map URL when species data changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHardinessMapUrl(null);
         setIsLoadingMap(false);
         setIsMapDialogOpen(false);

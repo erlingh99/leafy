@@ -218,6 +218,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         wateringInterval: editingPlant.watering_interval.toString(),
         image: editingPlant.image_url || "",
       };
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlantData(initialData);
       setOriginalData(initialData);
       setImageChanged(false);

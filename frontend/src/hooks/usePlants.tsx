@@ -40,7 +40,9 @@ export const usePlants = (t: Translations) => {
     pollingTimers.current.set(plantId, tid);
   }, [queryClient]);
 
-  pollForSpeciesRef.current = pollForSpecies;
+  useEffect(() => {
+    pollForSpeciesRef.current = pollForSpecies;
+  });
 
   const { data: plants = [], isPending: isPlantsPending } = useQuery({
     queryKey: ['plants'],
