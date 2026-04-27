@@ -41,12 +41,12 @@ export const PlantCardActions = ({
                 <Droplet className="h-4 w-4 mr-2" />
                 {t.water}
             </Button>
-            <Button onClick={() => onEdit(plant)} variant="outline" size="icon">
+            <Button onClick={() => onEdit(plant)} variant="outline" size="icon" aria-label={`${t.edit} ${plant.name}`}>
                 <Pencil className="h-4 w-4" />
             </Button>
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" aria-label={`${t.delete} ${plant.name}`}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </AlertDialogTrigger>

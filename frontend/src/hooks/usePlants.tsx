@@ -13,7 +13,7 @@ export const usePlants = (t: Translations) => {
   const plantsToastRef = useRef<ReturnType<typeof delayedToast> | null>(null);
 
   const pollingTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const pollForSpeciesRef = useRef<(plantId: string, attempts: number) => void>();
+  const pollForSpeciesRef = useRef<((plantId: string, attempts: number) => void) | null>(null);
 
   useEffect(() => () => { pollingTimers.current.forEach(clearTimeout); }, []);
 
@@ -184,7 +184,7 @@ export const usePlants = (t: Translations) => {
       }
       return { previousPlants };
     },
-    onError: (error, id, context) => {
+    onError: (error, _, context) => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants'], context.previousPlants);
       }
@@ -245,7 +245,7 @@ export const usePlants = (t: Translations) => {
       }
       return { previousPlants };
     },
-    onError: (error, variables, context) => {
+    onError: (error, _, context) => {
       if (context?.previousPlants) {
         queryClient.setQueryData(['plants'], context.previousPlants);
       }

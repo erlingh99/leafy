@@ -38,6 +38,8 @@ type StaticTranslationKeys =
   | "loading"
   | "missingInfo"
   | "fillAllFields"
+  | "invalidFileType"
+  | "invalidFileTypeDescription"
   | "invalidInterval"
   | "invalidIntervalDescription"
   | "imageTooLarge"
@@ -138,7 +140,9 @@ type StaticTranslationKeys =
   | "speciesFruits"
   | "speciesMedicinal"
   | "speciesPoisonousHumans"
+  | "speciesNotPoisonousHumans"
   | "speciesPoisonousPets"
+  | "speciesNotPoisonousPets"
   | "speciesCareGuides"
   | "loadingPlants"
   | "addingPlant"
@@ -158,7 +162,9 @@ type StaticTranslationKeys =
   | "notFoundReturnToHome"
   | "locale"
   | "lightMode"
-  | "darkMode";
+  | "darkMode"
+  | "removeImage"
+  | "selectLanguage";
 
 type FunctionTranslationKeys =
   | "plantAddedDescription"

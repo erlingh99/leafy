@@ -36,6 +36,8 @@ export const sv_SE: Translations = {
   // Toast messages
   missingInfo: "Information saknas",
   fillAllFields: "Vänligen fyll i alla fält",
+  invalidFileType: "Ogiltig filtyp",
+  invalidFileTypeDescription: "Välj en bildfil.",
   invalidInterval: "Ogiltigt vattningsintervall",
   invalidIntervalDescription: "Vänligen ange ett giltigt antal dagar (minst 1)",
   imageTooLarge: "Bilden är för stor",
@@ -143,7 +145,9 @@ export const sv_SE: Translations = {
   speciesCuisine: "Kulinarisk användning",
   speciesNoCuisine: "Ingen kulinarisk användning",
   speciesPoisonousHumans: "Giftig för människor",
+  speciesNotPoisonousHumans: "Säker för människor",
   speciesPoisonousPets: "Giftig för husdjur",
+  speciesNotPoisonousPets: "Säker för husdjur",
   speciesCareGuides: "Skötselguider",
   loadingPlants: "Laddar växter...",
   addingPlant: "Lägger till växt...",
@@ -164,4 +168,6 @@ export const sv_SE: Translations = {
   locale: "sv-SE",
   lightMode: "Ljust läge",
   darkMode: "Mörkt läge",
+  removeImage: "Ta bort bild",
+  selectLanguage: "Välj språk",
 };

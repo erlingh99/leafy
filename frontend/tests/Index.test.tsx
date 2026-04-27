@@ -1,12 +1,12 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-import Index from '../pages/Index';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Index from '@/pages/Index';
+import { describe, it, expect, vi } from 'vitest';
 
 const mockWaterAll = vi.fn();
 
 // Mock usePlants
-vi.mock('../hooks/usePlants', () => ({
+vi.mock('@/hooks/usePlants', () => ({
     usePlants: () => ({
         plants: [{ id: '1', name: 'Plant 1', watering_interval: 7, last_watered: new Date().toISOString() }],
         needsWater: () => true,
@@ -21,7 +21,7 @@ vi.mock('../hooks/usePlants', () => ({
 }));
 
 // Mock useSubscription
-vi.mock('../hooks/useSubscription', () => ({
+vi.mock('@/hooks/useSubscription', () => ({
     useSubscription: () => ({
         subscriptions: [],
         addSubscription: vi.fn(),

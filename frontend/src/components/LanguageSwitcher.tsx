@@ -6,25 +6,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Language } from "@/translations/types";
+import { Language, Translations } from "@/translations/types";
 
 interface LanguageSwitcherProps {
   currentLanguage: Language;
   onLanguageChange: (language: Language) => void;
+  t: Translations;
   mobile?: boolean;
 }
 
-export const LanguageSwitcher = ({ currentLanguage, onLanguageChange, mobile = false }: LanguageSwitcherProps) => {
+export const LanguageSwitcher = ({ currentLanguage, onLanguageChange, t, mobile = false }: LanguageSwitcherProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {mobile ? (
-        <Button variant="outline" className="w-full justify-start gap-2">
+        <Button variant="outline" className="w-full justify-start gap-2" aria-label={t.selectLanguage}>
           <Languages className="h-4 w-4" />
           Language
         </Button>
         ) : (
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" aria-label={t.selectLanguage}>
           <Languages className="h-4 w-4" />
         </Button>
         )}

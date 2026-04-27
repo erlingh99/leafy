@@ -1,8 +1,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { usePlants } from '../hooks/usePlants';
+import { usePlants } from '@/hooks/usePlants';
+import { translations } from '@/translations/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { translations } from '../translations/types';
 
 const t = translations["en"];
 
@@ -20,7 +20,7 @@ describe('usePlants optimistic updates', () => {
                 },
             },
         });
-        global.fetch = vi.fn().mockResolvedValue({
+        globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => [],
         });
@@ -43,9 +43,9 @@ describe('usePlants optimistic updates', () => {
         const { result } = renderHook(() => usePlants(t), { wrapper });
 
         // Clear any background fetches that happened during render
-        (global.fetch as ReturnType<typeof vi.fn>).mockClear();
+        (globalThis.fetch as ReturnType<typeof vi.fn>).mockClear();
         // Mock successful fetch for watering
-        (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
             ok: true,
             json: async () => ({}),
         });
@@ -61,7 +61,7 @@ describe('usePlants optimistic updates', () => {
             expect(updatedPlants?.[0].last_watered).not.toBe('2023-01-01T00:00:00.000Z');
         });
 
-        expect(global.fetch).toHaveBeenCalledWith('/api/plants/water/1', expect.objectContaining({
+        expect(globalThis.fetch).toHaveBeenCalledWith('/api/plants/water/1', expect.objectContaining({
             method: 'POST'
         }));
     });

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,8 +9,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useTheme } from "@/components/ThemeProvider";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Language, Translations } from "@/translations/types";
+
+const LanguageSwitcher = lazy(() =>
+  import("@/components/LanguageSwitcher").then((m) => ({ default: m.LanguageSwitcher }))
+);
 import { SubscriptionManager } from "@/components/SubscriptionManager";
 import { Subscription } from "@/models/subscription";
 
@@ -41,7 +45,7 @@ export function MobileMenu({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="md:hidden">
+        <Button variant="outline" size="icon" className="md:hidden" aria-label={t.menu}>
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
@@ -51,11 +55,14 @@ export function MobileMenu({
         </SheetHeader>
         <div className="flex flex-col gap-3 mt-6">
           <div className="w-full">
-            <LanguageSwitcher
-              currentLanguage={currentLanguage}
-              onLanguageChange={onLanguageChange}
-              mobile={true}
-            />
+            <Suspense fallback={null}>
+              <LanguageSwitcher
+                currentLanguage={currentLanguage}
+                onLanguageChange={onLanguageChange}
+                t={t}
+                mobile={true}
+              />
+            </Suspense>
           </div>
           <Button
             variant="outline"

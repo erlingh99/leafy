@@ -36,6 +36,8 @@ export const en_US: Translations = {
   // Toast messages
   missingInfo: "Missing information",
   fillAllFields: "Please fill in all fields",
+  invalidFileType: "Invalid file type",
+  invalidFileTypeDescription: "Please select an image file.",
   invalidInterval: "Invalid watering interval",
   invalidIntervalDescription: "Please enter a valid number of days (at least 1)",
   imageTooLarge: "Image too large",
@@ -143,7 +145,9 @@ export const en_US: Translations = {
   speciesCuisine: "Culinary Use",
   speciesNoCuisine: "No Culinary Use",
   speciesPoisonousHumans: "Poisonous to Humans",
+  speciesNotPoisonousHumans: "Safe for Humans",
   speciesPoisonousPets: "Poisonous to Pets",
+  speciesNotPoisonousPets: "Safe for Pets",
   speciesCareGuides: "Care Guides",
   loadingPlants: "Loading plants...",
   addingPlant: "Adding plant...",
@@ -164,4 +168,6 @@ export const en_US: Translations = {
   locale: "en-GB",
   lightMode: "Light Mode",
   darkMode: "Dark Mode",
+  removeImage: "Remove image",
+  selectLanguage: "Select language",
 };

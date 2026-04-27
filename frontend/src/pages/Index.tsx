@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { usePlants } from "@/hooks/usePlants";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Header } from "@/components/Header";
 import { PlantCard } from "@/components/PlantCard";
-import { PlantDialog } from "@/components/PlantDialog";
 import { EmptyPlantState } from "@/components/EmptyPlantState";
+
+const PlantDialog = lazy(() =>
+  import("@/components/PlantDialog").then((m) => ({ default: m.PlantDialog }))
+);
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { translations, Language } from "@/translations/types";
@@ -15,6 +18,7 @@ import { Droplet } from "lucide-react";
 const Index = () => {
   const { theme, setTheme } = useTheme();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [hasOpenedDialog, setHasOpenedDialog] = useState(false);
   const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
   const [language, setLanguage] = useState<Language>("en");
   const t = translations[language];
@@ -23,11 +27,13 @@ const Index = () => {
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
 
   const openAddDialog = () => {
+    setHasOpenedDialog(true);
     setEditingPlant(null);
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (plant: Plant) => {
+    setHasOpenedDialog(true);
     setEditingPlant(plant);
     setIsDialogOpen(true);
   };
@@ -80,13 +86,17 @@ const Index = () => {
           t={t}
         />
 
-        <PlantDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          editingPlant={editingPlant}
-          onSubmit={handlePlantSubmit}
-          t={t}
-        />
+        {hasOpenedDialog && (
+          <Suspense fallback={null}>
+            <PlantDialog
+              open={isDialogOpen}
+              onOpenChange={setIsDialogOpen}
+              editingPlant={editingPlant}
+              onSubmit={handlePlantSubmit}
+              t={t}
+            />
+          </Suspense>
+        )}
       </Dialog>
 
       <main className="container mx-auto px-4 py-8">

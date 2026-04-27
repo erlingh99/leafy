@@ -152,13 +152,13 @@ def shrink_image(image_bytes: bytes) -> bytes:
         ) from exc
 
 
-def create_thumbnail(image_bytes: bytes, size: int = 400) -> bytes:
+def create_thumbnail(image_bytes: bytes, size: int = 128) -> bytes:
     """
     Create a square JPEG thumbnail from the provided image bytes.
 
     Args:
         image_bytes: Raw image bytes or a data URI bytes value.
-        size: The maximum width/height of the square thumbnail (default 400).
+        size: The maximum width/height of the square thumbnail (default 128).
 
     Returns:
         Raw JPEG bytes for the thumbnail.

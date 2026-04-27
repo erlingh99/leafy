@@ -250,6 +250,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
                   size="icon"
                   className="absolute top-2 right-2"
                   onClick={removeImage}
+                  aria-label={t.removeImage}
                 >
                   <X className="h-4 w-4" />
                 </Button>

@@ -1,9 +1,13 @@
+import { lazy, Suspense } from "react";
 import { Plus, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { MobileMenu } from "@/components/MobileMenu";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Language, Translations } from "@/translations/types";
+
+const LanguageSwitcher = lazy(() =>
+  import("@/components/LanguageSwitcher").then((m) => ({ default: m.LanguageSwitcher }))
+);
 import { Subscription } from "@/models/subscription";
 import { SubscriptionManager } from "@/components/SubscriptionManager";
 
@@ -57,11 +61,14 @@ export const Header = ({
 
             {/* Desktop buttons */}
             <div className="hidden md:flex gap-2">
-              <LanguageSwitcher currentLanguage={language} onLanguageChange={onLanguageChange} />
+              <Suspense fallback={null}>
+                <LanguageSwitcher currentLanguage={language} onLanguageChange={onLanguageChange} t={t} />
+              </Suspense>
               <Button
                 variant="outline"
                 onClick={onToggleTheme}
                 size="icon"
+                aria-label={theme === "dark" ? t.lightMode : t.darkMode}
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
@@ -75,9 +82,9 @@ export const Header = ({
             </div>
 
             <DialogTrigger asChild>
-              <Button className="gap-2" onClick={onOpenAddDialog} disabled={isAddingPlant}>
+              <Button className="gap-2" onClick={onOpenAddDialog} disabled={isAddingPlant} aria-label={t.addPlant}>
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">{t.addPlant}</span>
+                <span className="hidden sm:inline" aria-hidden="true">{t.addPlant}</span>
               </Button>
             </DialogTrigger>
           </div>
