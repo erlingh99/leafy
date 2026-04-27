@@ -1,13 +1,9 @@
 services:
   leafy:
     container_name: leafy_backend
+    image: ghcr.io/erlingh99/leafy:latest
     dns:
       - ${DNS_IP}
-    build:
-      dockerfile: Dockerfile
-      args:
-        BACKEND_HOST: "0.0.0.0"
-        BACKEND_PORT: "80"
     env_file:
       - .env
     networks:

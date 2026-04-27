@@ -12,9 +12,10 @@ NC='\033[0m'
 echo -e "${BLUE}🚀 Starting deployment...${NC}"
 git pull origin main
 
-# Build and start Docker containers
-echo -e "${BLUE}🐳 Building and starting Docker containers...${NC}"
-sudo docker compose up -d --build
+# Pull and start Docker containers
+echo -e "${BLUE}🐳 Pulling and starting Docker containers...${NC}"
+sudo docker compose pull
+sudo docker compose up -d
 
 # Wait for the application to be ready
 echo -e "${BLUE}⏳ Waiting for application to be ready...${NC}"
