@@ -22,7 +22,7 @@ THUMBNAIL_SIZE = 128
 def _regenerate_thumbnail(image_bytes: bytes) -> bytes | None:
     """Re-create a 128x128 JPEG thumbnail from raw image bytes. Returns None on failure."""
     try:
-        from PIL import Image, ImageOps, UnidentifiedImageError
+        from PIL import Image, ImageOps
 
         with Image.open(BytesIO(image_bytes)) as img:
             img = ImageOps.exif_transpose(img)
