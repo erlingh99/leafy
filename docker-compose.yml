@@ -2,6 +2,7 @@ services:
   leafy:
     container_name: leafy_backend
     image: ghcr.io/erlingh99/leafy:latest
+    platform: linux/arm64
     dns:
       - ${DNS_IP}
     env_file:
