@@ -1,5 +1,2 @@
-import pytest
-
-@pytest.fixture
-def sample_fixture():
-    return "sample data"
+def pytest_configure():
+    pass
