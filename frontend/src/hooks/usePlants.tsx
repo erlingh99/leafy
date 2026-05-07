@@ -212,7 +212,7 @@ export const usePlants = (t: Translations) => {
   const getDaysUntilWatering = (plant: Plant) => {
     const lastWatered = new Date(plant.last_watered);
     const nextWatering = new Date(lastWatered.getTime() + plant.watering_interval * 24 * 60 * 60 * 1000);
-    const diff = Math.floor((nextWatering.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    const diff = (nextWatering.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24);
     return diff;
   };
 
@@ -261,6 +261,51 @@ export const usePlants = (t: Translations) => {
       toast({
         title: "Plants watered",
         description: "Successfully watered plants.",
+      });
+    }
+  });
+
+  const waterOverduePlantsMutation = useMutation({
+    mutationFn: async (overdueIds: string[]) => {
+      await Promise.all(
+        overdueIds.map(id =>
+          fetchWithTimeout(`/api/plants/water/${id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          }).then(res => {
+            if (!res.ok) throw new Error(`Failed to water plant ${id}`);
+          })
+        )
+      );
+    },
+    onMutate: async (overdueIds) => {
+      await queryClient.cancelQueries({ queryKey: ['plants'] });
+      const previousPlants = queryClient.getQueryData<Plant[]>(['plants']);
+      const now = new Date().toISOString();
+      if (previousPlants) {
+        queryClient.setQueryData<Plant[]>(['plants'],
+          previousPlants.map(p =>
+            overdueIds.includes(p.id) ? { ...p, last_watered: now } : p
+          )
+        );
+      }
+      return { previousPlants };
+    },
+    onError: (error, _, context) => {
+      if (context?.previousPlants) {
+        queryClient.setQueryData(['plants'], context.previousPlants);
+      }
+      toast({
+        title: t.errorWatering,
+        description: error instanceof Error ? error.message : "Failed to water overdue plants",
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plants'] });
+      toast({
+        title: "Overdue plants watered",
+        description: "Successfully watered all overdue plants.",
       });
     }
   });
@@ -398,6 +443,10 @@ export const usePlants = (t: Translations) => {
     });
   };
   const waterAllPlants = () => waterAllPlantsMutation.mutate();
+  const waterOverduePlants = () => {
+    const overdueIds = plants.filter(needsWater).map(p => p.id);
+    if (overdueIds.length > 0) waterOverduePlantsMutation.mutate(overdueIds);
+  };
 
   const fetchSpecies = useCallback(async (perenualId: number): Promise<Species | null> => {
     const loadingToast = delayedToast({
@@ -445,6 +494,7 @@ export const usePlants = (t: Translations) => {
     waterPlant,
     deletePlant,
     waterAllPlants,
+    waterOverduePlants,
     needsWater,
     getDaysUntilWatering,
     fetchSpecies,

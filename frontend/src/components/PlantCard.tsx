@@ -103,11 +103,16 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                 </span>
               </div>
               <div className="text-sm font-medium">
-                {isOverdue ? (
-                  <span className="text-warning">{t.overdue} {Math.abs(daysUntil)} {Math.abs(daysUntil) === 1 ? t.day : t.days}</span>
-                ) : (
-                  <span className="text-success">{t.nextWatering} {daysUntil} {daysUntil === 1 ? t.day : t.days}</span>
-                )}
+                {(() => {
+                  const absFloat = Math.abs(daysUntil);
+                  const roundedDays = Math.round(absFloat);
+                  const timeLabel = roundedDays === 0
+                    ? (() => { const h = Math.round(absFloat * 24); return `${h} ${h === 1 ? t.hour : t.hours}`; })()
+                    : `${roundedDays} ${roundedDays === 1 ? t.day : t.days}`;
+                  return isOverdue
+                    ? <span className="text-warning">{t.overdue} {timeLabel}</span>
+                    : <span className="text-success">{t.nextWatering} {timeLabel}</span>;
+                })()}
               </div>
             </div>
           </div>

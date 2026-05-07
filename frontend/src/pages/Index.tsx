@@ -23,7 +23,7 @@ const Index = () => {
   const [language, setLanguage] = useState<Language>("en");
   const t = translations[language];
 
-  const { plants, isAddingPlant, addPlant, updatePlant, waterPlant, deletePlant, waterAllPlants, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
+  const { plants, isAddingPlant, addPlant, updatePlant, waterPlant, deletePlant, waterAllPlants, waterOverduePlants, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
 
   const openAddDialog = () => {
@@ -106,10 +106,18 @@ const Index = () => {
           <>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">{t.myPlants || "My Plants"}</h2>
-              <Button onClick={() => waterAllPlants()} variant="secondary" className="shadow-sm">
-                <Droplet className="h-4 w-4 mr-2 text-primary" />
-                {t.waterAll || "Water All"}
-              </Button>
+              <div className="flex gap-2">
+                {plants.some(needsWater) && (
+                  <Button onClick={() => waterOverduePlants()} variant="secondary" className="shadow-sm">
+                    <Droplet className="h-4 w-4 mr-2 text-warning" />
+                    {t.waterOverdue || "Water Overdue"}
+                  </Button>
+                )}
+                <Button onClick={() => waterAllPlants()} variant="secondary" className="shadow-sm">
+                  <Droplet className="h-4 w-4 mr-2 text-primary" />
+                  {t.waterAll || "Water All"}
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
               {plants.map((plant) => (
