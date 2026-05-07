@@ -25,6 +25,6 @@ dist-ssr
 
 .env
 
-# Embedded firmware — generated files and secrets
+# Embedded firmware — secrets and generated WiFi credentials
 embedded/.env
-embedded/config.py
+embedded/wifi_config.py

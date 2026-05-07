@@ -18,10 +18,10 @@ jobs:
         run: uv sync --group dev
         working-directory: backend
       - name: Type check
-        run: uvx ty check
+        run: uv run ty check
         working-directory: backend
       - name: Lint
-        run: uvx ruff check
+        run: uv run ruff check
         working-directory: backend
       - name: Test
         run: uv run pytest
@@ -66,8 +66,8 @@ jobs:
         run: uv sync --group dev --no-install-project
         working-directory: embedded
       - name: Lint
-        run: uv run ruff check .
+        run: uv run ruff check
         working-directory: embedded
       - name: Typecheck
-        run: uv run pyright .
+        run: uv run ty check
         working-directory: embedded

@@ -2,12 +2,15 @@
 name = "leafy-embedded"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "micropython-esp32-stubs>=1.28.0.post3",
+]
 
 [dependency-groups]
 dev = [
     "ruff>=0.9",
     "pyright>=1.1",
+    "ty>=0.0.34",
 ]
 
 [tool.ruff.lint]

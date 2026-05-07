@@ -1,26 +1,28 @@
-import machine
-import time
-import urequests
 import json
+import time
+
+import machine
+import urequests
+
 from config import (
-    ADC_PIN,
     ADC_DRY,
+    ADC_PIN,
     ADC_WET,
-    SERVER_URL,
-    SENSOR_ID,
-    READING_INTERVAL_SECONDS,
     MAX_RETRIES,
+    READING_INTERVAL_SECONDS,
     RETRY_DELAY_SECONDS,
+    SENSOR_ID,
+    SERVER_URL,
 )
 
 adc = machine.ADC(machine.Pin(ADC_PIN))
 # ATTN_11DB enables full 0-3.3V input range (0-4095 raw).
 # Without this, the default 0dB cap (~1V) makes wet readings saturate.
-adc.atten(machine.ADC.ATTN_11DB)
+adc.init(atten=machine.ADC.ATTN_11DB)
 
 
 def read_moisture_percent():
-    raw = adc.read()
+    raw = adc.read_u16()
     level = (ADC_DRY - raw) / (ADC_DRY - ADC_WET) * 100
     return max(0.0, min(100.0, level))
 

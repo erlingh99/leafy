@@ -1,0 +1,2 @@
+WIFI_SSID: str
+WIFI_PASSWORD: str

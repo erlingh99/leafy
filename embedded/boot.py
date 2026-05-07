@@ -1,6 +1,8 @@
-import network
 import time
-from config import WIFI_SSID, WIFI_PASSWORD
+
+import network
+
+from wifi_config import WIFI_PASSWORD, WIFI_SSID
 
 
 def connect_wifi():
