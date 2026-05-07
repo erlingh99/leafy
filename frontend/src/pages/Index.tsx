@@ -44,6 +44,7 @@ const Index = () => {
     species_username?: string;
     wateringInterval?: string;
     image?: string;
+    sensor_id?: string;
   }) => {
     if (editingPlant) {
       return await updatePlant(editingPlant.id, plantData);
@@ -58,6 +59,7 @@ const Index = () => {
         species_username: plantData.species_username,
         wateringInterval: plantData.wateringInterval,
         image: plantData.image || "",
+        sensor_id: plantData.sensor_id,
       });
     }
   };

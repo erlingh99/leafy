@@ -15,6 +15,9 @@ class Plant(BaseModel):
     last_watered: datetime
     image: bytes | None = None
     perenual_species_id: int | None = None
+    sensor_id: str | None = None
+    moisture_level: float | None = None
+    moisture_updated_at: datetime | None = None
 
 
 class PlantUpdate(BaseModel):
@@ -25,6 +28,7 @@ class PlantUpdate(BaseModel):
     last_watered: datetime | None = None
     image: bytes | None = None
     perenual_species_id: int | None = None
+    sensor_id: str | None = None
 
 
 class PlantResponse(BaseModel):
@@ -40,3 +44,6 @@ class PlantResponse(BaseModel):
     image_url: str | None = None
     thumbnail_url: str | None = None
     perenual_species_id: int | None = None
+    sensor_id: str | None = None
+    moisture_level: float | None = None
+    moisture_updated_at: datetime | None = None

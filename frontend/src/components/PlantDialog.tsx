@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Camera, X } from "lucide-react";
+import { Camera, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ interface PlantDialogProps {
     species_username?: string;
     wateringInterval?: string;
     image?: string;
+    sensor_id?: string;
   }) => Promise<boolean>;
   t: Translations;
 }
@@ -31,6 +32,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
     wateringInterval: editingPlant?.watering_interval.toString() || "7",
     // For existing plants we show the image URL for preview; new uploads use data URI
     image: editingPlant?.image_url || "",
+    sensor_id: editingPlant?.sensor_id || "",
   });
   const [originalData, setOriginalData] = useState<{
     name: string;
@@ -38,8 +40,10 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
     species_username: string;
     wateringInterval: string;
     image: string;
+    sensor_id: string;
   } | null>(null);
   const [imageChanged, setImageChanged] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,17 +111,23 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         return;
       }
       // Send all required fields for new plant
-      const success = await onSubmit({
-        name: plantData.name,
-        species: plantData.species,
-        species_username: plantData.species_username || undefined,
-        wateringInterval: plantData.wateringInterval,
-        image: plantData.image || undefined,
-      });
-      if (success) {
-        setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "" });
-        setOriginalData(null);
-        onOpenChange(false);
+      setIsSubmitting(true);
+      try {
+        const success = await onSubmit({
+          name: plantData.name,
+          species: plantData.species,
+          species_username: plantData.species_username || undefined,
+          wateringInterval: plantData.wateringInterval,
+          image: plantData.image || undefined,
+          sensor_id: plantData.sensor_id || undefined,
+        });
+        if (success) {
+          setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "", sensor_id: "" });
+          setOriginalData(null);
+          onOpenChange(false);
+        }
+      } finally {
+        setIsSubmitting(false);
       }
     } else {
       // Validate required fields when updating (they can be changed but not left empty)
@@ -153,6 +163,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         species_username?: string;
         wateringInterval?: string;
         image?: string;
+        sensor_id?: string;
       } = {};
 
       if (!originalData) {
@@ -163,6 +174,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         changedFields.species_username = plantData.species_username || "";
         changedFields.wateringInterval = plantData.wateringInterval;
         changedFields.image = plantData.image || "";
+        changedFields.sensor_id = plantData.sensor_id || "";
       } else {
         // Compare and only include changed fields
         // Required fields: only include if changed
@@ -175,7 +187,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         if (plantData.wateringInterval !== originalData.wateringInterval) {
           changedFields.wateringInterval = plantData.wateringInterval;
         }
-        
+
         // Optional fields: include if changed, including clearing (value to empty)
         // Normalize empty strings and null/undefined for comparison
         const currentSpeciesUsername = plantData.species_username || "";
@@ -184,7 +196,13 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
           // Send empty string to clear, or the value if set
           changedFields.species_username = plantData.species_username || "";
         }
-        
+
+        const currentSensorId = plantData.sensor_id || "";
+        const originalSensorId = originalData.sensor_id || "";
+        if (currentSensorId !== originalSensorId) {
+          changedFields.sensor_id = plantData.sensor_id || "";
+        }
+
         // Only include image in the payload if the user changed it (new upload or cleared)
         if (imageChanged) {
           changedFields.image = plantData.image || "";
@@ -201,9 +219,14 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         return;
       }
 
-      const success = await onSubmit(changedFields);
-      if (success) {
-        onOpenChange(false);
+      setIsSubmitting(true);
+      try {
+        const success = await onSubmit(changedFields);
+        if (success) {
+          onOpenChange(false);
+        }
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -217,13 +240,14 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         species_username: editingPlant.species_username ?? "",
         wateringInterval: editingPlant.watering_interval.toString(),
         image: editingPlant.image_url || "",
+        sensor_id: editingPlant.sensor_id ?? "",
       };
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlantData(initialData);
       setOriginalData(initialData);
       setImageChanged(false);
     } else {
-      setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "" });
+      setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "", sensor_id: "" });
       setOriginalData(null);
     }
   }, [editingPlant]);
@@ -312,7 +336,18 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
               }
             />
           </div>
-          <Button onClick={handleSubmit} className="w-full">
+          <div className="space-y-2">
+            <Label htmlFor="sensor_id">{t.sensorId} <span className="text-muted-foreground font-normal">{t.sensorIdOptional}</span></Label>
+            <Input
+              id="sensor_id"
+              placeholder={t.sensorIdPlaceholder}
+              value={plantData.sensor_id}
+              onChange={(e) => setPlantData({ ...plantData, sensor_id: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">{t.sensorIdHelper}</p>
+          </div>
+          <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {editingPlant ? t.updatePlant : t.addPlant}
           </Button>
         </div>

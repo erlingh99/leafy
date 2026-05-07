@@ -64,6 +64,7 @@ app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="asse
 
 # Include API routers
 app.include_router(plant_api.plant_router)
+app.include_router(plant_api.sensor_router)
 app.include_router(subscription_api.subscription_router)
 app.include_router(health_api.health_router)
 

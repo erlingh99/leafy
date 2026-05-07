@@ -11,4 +11,7 @@ export interface Plant {
   image_url: string | null;
   thumbnail_url: string | null;
   perenual_species_id?: number | null;
+  sensor_id: string | null;
+  moisture_level: number | null;
+  moisture_updated_at: string | null;
 }

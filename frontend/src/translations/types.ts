@@ -167,7 +167,17 @@ type StaticTranslationKeys =
   | "lightMode"
   | "darkMode"
   | "removeImage"
-  | "selectLanguage";
+  | "selectLanguage"
+  | "moisture"
+  | "moistureGuideTitle"
+  | "moistureGuideMoist"
+  | "moistureGuideGettingDry"
+  | "moistureGuideDry"
+  | "moistureGuideAriaLabel"
+  | "sensorId"
+  | "sensorIdOptional"
+  | "sensorIdPlaceholder"
+  | "sensorIdHelper";
 
 type FunctionTranslationKeys =
   | "plantAddedDescription"

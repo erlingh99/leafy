@@ -79,6 +79,7 @@ export const usePlants = (t: Translations) => {
       species_username?: string;
       wateringInterval: string;
       image: string;
+      sensor_id?: string;
     }) => {
       const interval = parseInt(plantData.wateringInterval);
       const response = await fetchWithTimeout('/api/plants', {
@@ -93,6 +94,7 @@ export const usePlants = (t: Translations) => {
           watering_interval: interval,
           image: plantData.image,
           last_watered: new Date().toISOString(),
+          sensor_id: plantData.sensor_id || null,
         }),
       });
 
@@ -118,7 +120,7 @@ export const usePlants = (t: Translations) => {
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const updatePlantMutation = useMutation({
@@ -155,7 +157,7 @@ export const usePlants = (t: Translations) => {
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
-    }
+    },
   });
 
   const waterPlantMutation = useMutation({
@@ -256,8 +258,6 @@ export const usePlants = (t: Translations) => {
       });
     },
     onSuccess: () => {
-      // Opt out of a full refetch to be lightweight, or refetch background:
-      queryClient.invalidateQueries({ queryKey: ['plants'] });
       toast({
         title: "Plants watered",
         description: "Successfully watered plants.",
@@ -323,24 +323,31 @@ export const usePlants = (t: Translations) => {
         throw new Error('Failed to delete plant');
       }
     },
-    onSuccess: (_, id) => {
-      const plant = plants.find((p) => p.id === id);
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['plants'] });
+      const previousPlants = queryClient.getQueryData<Plant[]>(['plants']);
+      const deletedPlantName = previousPlants?.find(p => p.id === id)?.name;
+
       queryClient.setQueryData<Plant[]>(['plants'], (old) => {
         if (!old) return old;
-        return old.filter((p) => p.id !== id);
+        return old.filter(p => p.id !== id);
       });
-      toast({
-        title: t.plantDeleted,
-        description: t.plantDeletedDescription(plant?.name || ""),
-      });
+      return { previousPlants, deletedPlantName };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      queryClient.setQueryData(['plants'], context?.previousPlants);
       toast({
         title: t.errorDeleting,
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
-    }
+    },
+    onSuccess: (_, _id, context) => {
+      toast({
+        title: t.plantDeleted,
+        description: t.plantDeletedDescription(context?.deletedPlantName || ""),
+      });
+    },
   });
 
   const addPlant = async (plantData: {
@@ -349,6 +356,7 @@ export const usePlants = (t: Translations) => {
     species_username?: string;
     wateringInterval: string;
     image: string;
+    sensor_id?: string;
   }) => {
     if (!plantData.name || !plantData.species) {
       toast({
@@ -390,6 +398,7 @@ export const usePlants = (t: Translations) => {
     species_username?: string;
     wateringInterval?: string;
     image?: string;
+    sensor_id?: string;
   }) => {
     if (plantData.wateringInterval !== undefined) {
       const interval = parseInt(plantData.wateringInterval);
@@ -414,6 +423,7 @@ export const usePlants = (t: Translations) => {
       species_username?: string;
       watering_interval?: number;
       image?: string;
+      sensor_id?: string;
     } = {};
 
     if (plantData.name !== undefined) updatePayload.name = plantData.name;
@@ -421,6 +431,7 @@ export const usePlants = (t: Translations) => {
     if (plantData.species_username !== undefined) updatePayload.species_username = plantData.species_username || "";
     if (plantData.wateringInterval !== undefined) updatePayload.watering_interval = parseInt(plantData.wateringInterval);
     if (plantData.image !== undefined) updatePayload.image = plantData.image || "";
+    if (plantData.sensor_id !== undefined) updatePayload.sensor_id = plantData.sensor_id || "";
 
     try {
       await updatePlantMutation.mutateAsync({ plantId, updatePayload });

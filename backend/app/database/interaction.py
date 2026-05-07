@@ -34,6 +34,9 @@ async def load_plants_without_images(db: AsyncSession) -> list[dict]:
         PlantDB.watering_interval,
         PlantDB.last_watered,
         PlantDB.perenual_species_id,
+        PlantDB.sensor_id,
+        PlantDB.moisture_level,
+        PlantDB.moisture_updated_at,
         PlantDB.image.isnot(None).label("has_image"),
         PlantDB.thumbnail.isnot(None).label("has_thumbnail"),
     )
@@ -51,6 +54,9 @@ async def load_plants_without_images(db: AsyncSession) -> list[dict]:
             "watering_interval": row.watering_interval,
             "last_watered": row.last_watered,
             "perenual_species_id": row.perenual_species_id,
+            "sensor_id": row.sensor_id,
+            "moisture_level": row.moisture_level,
+            "moisture_updated_at": row.moisture_updated_at,
             "has_image": bool(row.has_image),
             "has_thumbnail": bool(row.has_thumbnail),
         })
@@ -92,6 +98,7 @@ async def update_plant(
         "last_watered": db_plant.last_watered,
         "image": db_plant.image,
         "perenual_species_id": db_plant.perenual_species_id,
+        "sensor_id": db_plant.sensor_id,
     }
     if set_thumbnail:
         values["thumbnail"] = thumbnail
@@ -119,6 +126,21 @@ async def water_plant(db: AsyncSession, plant_id: UUID) -> bool:
     updated_id = result.scalar_one_or_none()
     return updated_id is not None
 
+
+
+async def update_plant_moisture(db: AsyncSession, sensor_id: str, level: float) -> bool:
+    """Update moisture_level and moisture_updated_at for the plant with the given sensor_id."""
+    stmt = (
+        update(PlantDB)
+        .where(PlantDB.sensor_id == sensor_id)
+        .values(
+            moisture_level=level,
+            moisture_updated_at=datetime.now(timezone.utc),
+        )
+        .returning(PlantDB.id)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none() is not None
 
 
 async def delete_plant(db: AsyncSession, plant_id: UUID) -> None:

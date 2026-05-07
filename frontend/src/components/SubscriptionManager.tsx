@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,13 +33,20 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   const [newSubscription, setNewSubscription] = useState({ name: "", email: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSubscription, setEditingSubscription] = useState({ name: "", email: "" });
+  const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleAdd = async () => {
     if (newSubscription.name && newSubscription.email && isValidEmail(newSubscription.email)) {
-      await onAddSubscription(newSubscription);
-      setNewSubscription({ name: "", email: "" });
+      setIsAdding(true);
+      try {
+        await onAddSubscription(newSubscription);
+        setNewSubscription({ name: "", email: "" });
+      } finally {
+        setIsAdding(false);
+      }
     }
   };
 
@@ -49,9 +57,14 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 
   const handleSave = async () => {
     if (editingId && isValidEmail(editingSubscription.email)) {
-      await onUpdateSubscription(editingId, editingSubscription);
-      setEditingId(null);
-      setEditingSubscription({ name: "", email: "" });
+      setIsSaving(true);
+      try {
+        await onUpdateSubscription(editingId, editingSubscription);
+        setEditingId(null);
+        setEditingSubscription({ name: "", email: "" });
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -104,7 +117,9 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={handleSave}
+                      disabled={isSaving}
                     >
+                      {isSaving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
                       {t.subscriptionSave}
                     </Button>
                   </>
@@ -152,7 +167,10 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                 setNewSubscription({ ...newSubscription, email: e.target.value })
               }
             />
-            <Button onClick={handleAdd}>{t.subscriptionAdd}</Button>
+            <Button onClick={handleAdd} disabled={isAdding}>
+              {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t.subscriptionAdd}
+            </Button>
           </div>
           <DialogFooter>
             <DialogClose asChild>

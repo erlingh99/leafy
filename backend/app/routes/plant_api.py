@@ -10,6 +10,8 @@ from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pydantic import BaseModel, Field as PydanticField
+
 from ..database import (
     delete_plant as db_delete_plant,
     get_db,
@@ -20,6 +22,7 @@ from ..database import (
     load_plants_without_images,
     save_plant,
     update_plant as db_update_plant,
+    update_plant_moisture as db_update_plant_moisture,
     get_plant_image as db_get_plant_image,
     get_plant_thumbnail as db_get_plant_thumbnail,
     has_plant_thumbnail as db_has_plant_thumbnail,
@@ -37,8 +40,14 @@ from ..services import (
 from ..utils import shrink_image, create_thumbnail, parse_data_uri
 
 plant_router = APIRouter(prefix="/api/plants", tags=["plants"])
+sensor_router = APIRouter(prefix="/api", tags=["sensor"])
 
 logger = logging.getLogger('uvicorn.error')
+
+
+class MoistureReading(BaseModel):
+    sensor_id: str
+    level: float = PydanticField(ge=0.0, le=100.0)
 
 
 def _plant_response(plant: Plant, *, has_image: bool, has_thumbnail: bool) -> PlantResponse:
@@ -54,6 +63,9 @@ def _plant_response(plant: Plant, *, has_image: bool, has_thumbnail: bool) -> Pl
         perenual_species_id=plant.perenual_species_id,
         image_url=(f"/api/plants/{plant.id}/image" if has_image else None),
         thumbnail_url=(f"/api/plants/{plant.id}/thumbnail" if has_thumbnail else None),
+        sensor_id=plant.sensor_id,
+        moisture_level=plant.moisture_level,
+        moisture_updated_at=plant.moisture_updated_at,
     )
 
 
@@ -268,6 +280,18 @@ async def water_plant(
         raise HTTPException(status_code=404, detail="Plant not found")
     return {"message": "Plant watered successfully"}
 
+
+
+@sensor_router.post("/moisture")
+async def update_moisture(
+    reading: MoistureReading,
+    db: AsyncSession = Depends(get_db),
+):
+    """Receive a moisture reading from an ESP32 sensor and persist it."""
+    updated = await db_update_plant_moisture(db, reading.sensor_id, reading.level)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Sensor ID not registered to any plant")
+    return {"message": "Moisture updated successfully"}
 
 
 # Deduplicates concurrent background-task fetches for the same species name.

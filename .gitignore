@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 
 .env
+
+# Embedded firmware — generated files and secrets
+embedded/.env
+embedded/config.py
