@@ -12,26 +12,20 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Backend lint
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          target: lint
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      - name: Backend tests
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          target: test
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Install dependencies
+        run: uv sync --group dev
+        working-directory: backend
+      - name: Type check
+        run: uv run ty check
+        working-directory: backend
+      - name: Lint
+        run: uv run ruff check
+        working-directory: backend
+      - name: Test
+        run: uv run pytest
+        working-directory: backend
 
   frontend-checks:
     runs-on: ubuntu-latest
@@ -40,23 +34,40 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Frontend lint
-        uses: docker/build-push-action@v5
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          context: ./frontend
-          target: lint
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      - name: Frontend tests
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          target: test
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+      - name: Type check
+        run: npm run check
+        working-directory: frontend
+      - name: Lint
+        run: npm run lint
+        working-directory: frontend
+      - name: Test
+        run: npm run test
+        working-directory: frontend
+
+  embedded-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Install dependencies
+        run: uv sync --group dev --no-install-project
+        working-directory: embedded
+      - name: Lint
+        run: uv run ruff check
+        working-directory: embedded
+      - name: Typecheck
+        run: uv run ty check
+        working-directory: embedded

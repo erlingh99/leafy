@@ -27,22 +27,18 @@ async def delete_subscription(subscription_id: UUID, db: AsyncSession = Depends(
     await db_delete_subscription(db, subscription_id)
     return {"message": "Subscription deleted successfully"}
 
-@subscription_router.put("")
+@subscription_router.put("", response_model=Subscription)
 async def set_subscription(
     subscription: Subscription,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
-):
+) -> Subscription:
     await save_subscription(db, subscription)
-    # Commit before returning so the subscription is visible when the client
-    # refetches the list immediately after receiving the success response.
-    # The get_db dependency will attempt a second commit on cleanup, which is a no-op.
-    await db.commit()
     background_tasks.add_task(send_welcome_email, subscription, BREVO_API_KEY)
-    return {"message": "Subscription saved successfully"}
+    return subscription
 
-@subscription_router.patch("/{subscription_id}")
-async def update_subscription(subscription_id: UUID, partial_subscription: SubscriptionUpdate, db: AsyncSession = Depends(get_db)) -> dict[str, str]:
+@subscription_router.patch("/{subscription_id}", response_model=Subscription)
+async def update_subscription(subscription_id: UUID, partial_subscription: SubscriptionUpdate, db: AsyncSession = Depends(get_db)) -> Subscription:
     subscriptions = await load_subscriptions(db)
     if subscription_id in subscriptions:
         subscription = subscriptions[subscription_id]
@@ -50,5 +46,5 @@ async def update_subscription(subscription_id: UUID, partial_subscription: Subsc
         updated_subscription = Subscription(**update_data)
         updated_subscription.updated_at = datetime.now(timezone.utc)
         await db_update_subscription(db, updated_subscription)
-        return {"message" : "Subscription updated successfully"}
+        return updated_subscription
     raise HTTPException(status_code=404, detail="Subscription not found")

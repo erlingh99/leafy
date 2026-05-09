@@ -1,0 +1,24 @@
+[project]
+name = "leafy-embedded"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "micropython-esp32-stubs>=1.28.0.post3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "pyright>=1.1",
+    "ty>=0.0.34",
+    "esptool>=5.2.0",
+    "mpremote>=1.28.0",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["T201"]  # print() is device serial output
+
+[tool.pyright]
+pythonVersion = "3.11"
+reportMissingImports = false  # MicroPython built-ins have no stubs

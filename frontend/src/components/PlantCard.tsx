@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Droplet, Calendar, Info, ChevronDown, ChevronUp,
+  Droplet, Calendar, Info, ChevronDown, ChevronUp, HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SpeciesInfoPanel } from "./SpeciesInfoPanel";
 import { PlantCardActions } from "./PlantCardActions";
 import { Plant } from "@/models/plant";
@@ -102,6 +103,45 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                   {t.watered}: {new Date(plant.last_watered).toLocaleDateString(t.locale)}
                 </span>
               </div>
+              {plant.moisture_level !== null && plant.moisture_level !== undefined && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Droplet className="h-4 w-4 text-blue-400" />
+                  <span className="text-muted-foreground">{t.moisture}:</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      plant.moisture_level >= 60
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : plant.moisture_level >= 30
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                        : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                    }`}
+                  >
+                    {Math.round(plant.moisture_level)}%
+                  </span>
+                  {plant.moisture_updated_at && (
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(plant.moisture_updated_at).toLocaleString(t.locale)}
+                    </span>
+                  )}
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="-m-1 p-1 rounded flex-shrink-0 touch-manipulation"
+                        aria-label={t.moistureGuideAriaLabel}
+                      >
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[200px] text-xs leading-relaxed">
+                      <p className="font-semibold mb-1">{t.moistureGuideTitle}</p>
+                      <p><span className="text-green-400">●</span> {t.moistureGuideMoist}</p>
+                      <p><span className="text-amber-400">●</span> {t.moistureGuideGettingDry}</p>
+                      <p><span className="text-red-400">●</span> {t.moistureGuideDry}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
               <div className="text-sm font-medium">
                 {(() => {
                   const absFloat = Math.abs(daysUntil);

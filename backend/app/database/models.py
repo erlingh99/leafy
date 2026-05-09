@@ -4,7 +4,7 @@ SQLAlchemy models for the database
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, JSON, Text, func, LargeBinary
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, Text, func, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .setup import Base
@@ -34,7 +34,9 @@ class PlantDB(Base):
     perenual_species_id: Mapped[int | None] = mapped_column(
         Integer(), ForeignKey("plant_species.perenual_id", ondelete="SET NULL"), nullable=True
     )
-
+    sensor_id: Mapped[str | None] = mapped_column(Text(), nullable=True, unique=True)
+    moisture_level: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    moisture_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     @classmethod
     def from_model(cls, plant: Plant) -> "PlantDB":
@@ -51,8 +53,9 @@ class PlantDB(Base):
             image=plant.image,
             thumbnail=getattr(plant, "thumbnail", None),
             perenual_species_id=plant.perenual_species_id,
+            sensor_id=plant.sensor_id,
         )
-    
+
     def to_model(self) -> Plant:
         """Convert to Pydantic model"""
         return Plant(
@@ -66,6 +69,9 @@ class PlantDB(Base):
             last_watered=self.last_watered,
             image=self.image,
             perenual_species_id=self.perenual_species_id,
+            sensor_id=self.sensor_id,
+            moisture_level=self.moisture_level,
+            moisture_updated_at=self.moisture_updated_at,
         )
 
 class HardinessMapDB(Base):

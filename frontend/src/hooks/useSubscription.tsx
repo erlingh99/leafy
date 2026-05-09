@@ -48,22 +48,37 @@ export const useSubscription = (t: Translations) => {
       if (!response.ok) {
         throw new Error('Failed to add subscription');
       }
+      return (await response.json()) as Subscription;
     },
-    onSuccess: (_, variables) => {
-      const promise = queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      toast({
-        title: t.subscriptionAdded,
-        description: t.subscriptionAddedDescription(variables.name || ""),
-      });
-      return promise;
+    onMutate: async (subscriptionData) => {
+      await queryClient.cancelQueries({ queryKey: ['subscriptions'] });
+      const previous = queryClient.getQueryData<Subscription[]>(['subscriptions']);
+
+      const tempSubscription: Subscription = {
+        id: `temp-${Date.now()}`,
+        name: subscriptionData.name ?? "",
+        email: subscriptionData.email ?? "",
+      };
+      queryClient.setQueryData<Subscription[]>(['subscriptions'], (old = []) => [...old, tempSubscription]);
+      return { previous, tempId: tempSubscription.id };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      queryClient.setQueryData(['subscriptions'], context?.previous);
       toast({
         title: t.errorAddingSubscription,
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
-    }
+    },
+    onSuccess: (newSubscription, variables, context) => {
+      queryClient.setQueryData<Subscription[]>(['subscriptions'], (old = []) =>
+        old.map(s => s.id === context?.tempId ? newSubscription : s)
+      );
+      toast({
+        title: t.subscriptionAdded,
+        description: t.subscriptionAddedDescription(variables.name || ""),
+      });
+    },
   });
 
   // Mutation for updating a subscription
@@ -80,22 +95,34 @@ export const useSubscription = (t: Translations) => {
       if (!response.ok) {
         throw new Error('Failed to update subscription');
       }
+      return (await response.json()) as Subscription;
     },
-    onSuccess: (_, variables) => {
-      const promise = queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      toast({
-        title: t.subscriptionUpdated,
-        description: t.subscriptionUpdatedDescription(variables.subscription.name || ""),
-      });
-      return promise;
+    onMutate: async ({ id, subscription }) => {
+      await queryClient.cancelQueries({ queryKey: ['subscriptions'] });
+      const previous = queryClient.getQueryData<Subscription[]>(['subscriptions']);
+
+      queryClient.setQueryData<Subscription[]>(['subscriptions'], (old) =>
+        old?.map(s => s.id === id ? { ...s, ...subscription } : s) ?? old
+      );
+      return { previous };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      queryClient.setQueryData(['subscriptions'], context?.previous);
       toast({
         title: t.errorUpdatingSubscription,
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
-    }
+    },
+    onSuccess: (updatedSubscription, variables) => {
+      queryClient.setQueryData<Subscription[]>(['subscriptions'], (old) =>
+        old?.map(s => s.id === updatedSubscription.id ? updatedSubscription : s) ?? old
+      );
+      toast({
+        title: t.subscriptionUpdated,
+        description: t.subscriptionUpdatedDescription(variables.subscription.name || ""),
+      });
+    },
   });
 
   // Mutation for deleting a subscription
