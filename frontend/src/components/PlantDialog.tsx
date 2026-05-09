@@ -254,11 +254,11 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex flex-col max-h-[90dvh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{editingPlant ? t.editPlant : t.addNewPlant}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-4">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pt-4 pb-2 pr-1">
           <div className="space-y-2">
             <Label htmlFor="image">{t.plantPhoto}</Label>
             {plantData.image ? (
@@ -323,7 +323,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
               value={plantData.species_username}
               onChange={(e) => setPlantData({ ...plantData, species_username: e.target.value })}
             />
-          </div>          
+          </div>
           <div className="space-y-2">
             <Label htmlFor="interval">{t.wateringInterval}</Label>
             <Input

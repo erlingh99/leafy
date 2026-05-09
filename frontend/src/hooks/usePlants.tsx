@@ -424,6 +424,8 @@ export const usePlants = (t: Translations) => {
       watering_interval?: number;
       image?: string;
       sensor_id?: string;
+      moisture_level?: number | null;
+      moisture_updated_at?: string | null;
     } = {};
 
     if (plantData.name !== undefined) updatePayload.name = plantData.name;
@@ -431,7 +433,13 @@ export const usePlants = (t: Translations) => {
     if (plantData.species_username !== undefined) updatePayload.species_username = plantData.species_username || "";
     if (plantData.wateringInterval !== undefined) updatePayload.watering_interval = parseInt(plantData.wateringInterval);
     if (plantData.image !== undefined) updatePayload.image = plantData.image || "";
-    if (plantData.sensor_id !== undefined) updatePayload.sensor_id = plantData.sensor_id || "";
+    if (plantData.sensor_id !== undefined) {
+      updatePayload.sensor_id = plantData.sensor_id || "";
+      if (!plantData.sensor_id) {
+        updatePayload.moisture_level = null;
+        updatePayload.moisture_updated_at = null;
+      }
+    }
 
     try {
       await updatePlantMutation.mutateAsync({ plantId, updatePayload });
