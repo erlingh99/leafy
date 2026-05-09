@@ -1,8 +1,8 @@
-SERVER_URL = 'http://leafy.lan'
-SENSOR_ID = 'moisture-sensor1'
+SERVER_URL = "https://leafy.lan"
+SENSOR_ID = "moisture-sensor-1"
 ADC_PIN = 34
-ADC_DRY = 4095
-ADC_WET = 1000
+ADC_DRY = 65535
+ADC_WET = 23765
 READING_INTERVAL_SECONDS = 300
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 10
