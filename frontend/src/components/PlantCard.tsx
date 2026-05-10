@@ -28,6 +28,7 @@ const parseUtc = (utcStr: string) =>
 
 export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDelete, fetchSpecies, t }: PlantCardProps) => {
   const [isSpeciesOpen, setIsSpeciesOpen] = useState(false);
+  const [moistureTooltipOpen, setMoistureTooltipOpen] = useState(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
   const hasFetchedRef = useRef(false);
@@ -106,7 +107,9 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                   {t.watered}: {new Date(plant.last_watered).toLocaleDateString(t.locale)}
                 </span>
               </div>
-              {plant.moisture_level !== null && plant.moisture_level !== undefined && (
+              {plant.moisture_level !== null && plant.moisture_level !== undefined &&
+               plant.moisture_updated_at &&
+               Date.now() - parseUtc(plant.moisture_updated_at).getTime() < 24 * 60 * 60 * 1000 && (
                 <div className="flex items-start gap-2 text-sm flex-wrap">
                   <Droplet className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
                   <span className="text-muted-foreground flex-shrink-0">{t.moisture}:</span>
@@ -122,12 +125,13 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                     >
                       {Math.round(plant.moisture_level)}%
                     </span>
-                    <Tooltip delayDuration={0}>
+                    <Tooltip delayDuration={0} open={moistureTooltipOpen} onOpenChange={setMoistureTooltipOpen}>
                       <TooltipTrigger asChild>
                         <button
                           type="button"
                           className="-m-1 p-1 rounded flex-shrink-0 touch-manipulation"
                           aria-label={t.moistureGuideAriaLabel}
+                          onClick={() => setMoistureTooltipOpen(v => !v)}
                         >
                           <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
