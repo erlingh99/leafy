@@ -40,7 +40,11 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
   const [customSensorId, setCustomSensorId] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
-  const effectiveSensorId = activeSensors.length > 0 ? selectedSensorId : customSensorId;
+  const availableSensors = activeSensors.filter(
+    (s) => !assignments.some((a) => a.sensor_id === s.sensor_id)
+  );
+
+  const effectiveSensorId = availableSensors.length > 0 ? selectedSensorId : customSensorId;
 
   const handleAdd = async () => {
     const sensorId = effectiveSensorId.trim();
@@ -61,12 +65,12 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
   };
 
   const selectClass =
-    "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors " +
+    "flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors " +
     "focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
     <>
-      <Button variant="outline" onClick={() => setIsOpen(true)}>
+      <Button onClick={() => setIsOpen(true)}>
         <Cpu className="h-4 w-4 mr-2" />
         {t.sensorAssignmentButton}
       </Button>
@@ -114,7 +118,7 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
               ))}
             </select>
 
-            {activeSensors.length > 0 ? (
+            {availableSensors.length > 0 ? (
               <select
                 className={selectClass}
                 value={selectedSensorId}
@@ -122,7 +126,7 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
                 aria-label={t.selectSensor}
               >
                 <option value="">{t.selectSensor}</option>
-                {activeSensors.map((s) => (
+                {availableSensors.map((s) => (
                   <option key={s.sensor_id} value={s.sensor_id}>
                     {s.sensor_id}
                   </option>
@@ -137,7 +141,7 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
               />
             )}
 
-            {activeSensors.length === 0 && sensors.length === 0 && (
+            {availableSensors.length === 0 && sensors.length === 0 && (
               <p className="text-xs text-muted-foreground">{t.noActiveSensors}</p>
             )}
 

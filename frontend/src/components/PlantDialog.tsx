@@ -245,7 +245,7 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>{editingPlant ? t.editPlant : t.addNewPlant}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pt-4 pb-2 pr-1">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pt-4 pb-2 px-1">
           <div className="space-y-2">
             <Label htmlFor="image">{t.plantPhoto}</Label>
             {plantData.image ? (

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Droplet, Calendar, Info, ChevronDown, ChevronUp, HelpCircle, BarChart2,
+  Droplet, Calendar, Info, ChevronDown, ChevronUp, HelpCircle, BarChart2, Loader2,
 } from "lucide-react";
+import { usePlantHistory } from "@/hooks/usePlantHistory";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -29,7 +30,11 @@ const parseUtc = (utcStr: string) =>
 
 export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDelete, fetchSpecies, t }: PlantCardProps) => {
   const [isSpeciesOpen, setIsSpeciesOpen] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyRequested, setHistoryRequested] = useState(false);
+  const [historyClosed, setHistoryClosed] = useState(false);
+  const { isLoading: isHistoryLoading } = usePlantHistory(plant.id, 30);
+  const isHistoryOpen = historyRequested && !isHistoryLoading && !historyClosed;
+  const isHistoryPending = historyRequested && isHistoryLoading;
   const [moistureTooltipOpen, setMoistureTooltipOpen] = useState(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
@@ -207,16 +212,28 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
           </Collapsible>
         )}
 
-        <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <Collapsible
+          open={isHistoryOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              setHistoryRequested(true);
+              setHistoryClosed(false);
+            } else {
+              setHistoryClosed(true);
+            }
+          }}
+        >
           <CollapsibleTrigger asChild>
             <Button variant="outline" className="w-full mb-2">
-              <BarChart2 className="h-4 w-4 mr-2" />
-              {isHistoryOpen ? t.hideHistory : t.showHistory}
-              {isHistoryOpen ? (
-                <ChevronUp className="h-4 w-4 ml-2" />
-              ) : (
-                <ChevronDown className="h-4 w-4 ml-2" />
-              )}
+              {isHistoryPending
+                ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                : <BarChart2 className="h-4 w-4 mr-2" />}
+              {isHistoryPending
+                ? t.loading
+                : isHistoryOpen ? t.hideHistory : t.showHistory}
+              {!isHistoryPending && (isHistoryOpen
+                ? <ChevronUp className="h-4 w-4 ml-2" />
+                : <ChevronDown className="h-4 w-4 ml-2" />)}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent>
