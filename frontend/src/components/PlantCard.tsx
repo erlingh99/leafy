@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Droplet, Calendar, Info, ChevronDown, ChevronUp, HelpCircle,
+  Droplet, Calendar, Info, ChevronDown, ChevronUp, HelpCircle, BarChart2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SpeciesInfoPanel } from "./SpeciesInfoPanel";
 import { PlantCardActions } from "./PlantCardActions";
+import { PlantHistoryChart } from "./PlantHistoryChart";
 import { Plant } from "@/models/plant";
 import { Species } from "@/models/species";
 import { Translations } from "@/translations/types";
@@ -28,6 +29,7 @@ const parseUtc = (utcStr: string) =>
 
 export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDelete, fetchSpecies, t }: PlantCardProps) => {
   const [isSpeciesOpen, setIsSpeciesOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [moistureTooltipOpen, setMoistureTooltipOpen] = useState(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
@@ -59,6 +61,10 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
     }
   }, [isSpeciesOpen]);
 
+  const [now] = useState(Date.now);
+  const isMoistureRecent = plant.moisture_updated_at
+    ? now - parseUtc(plant.moisture_updated_at).getTime() < 24 * 60 * 60 * 1000
+    : false;
 
   return (
     <Card
@@ -108,8 +114,7 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                 </span>
               </div>
               {plant.moisture_level !== null && plant.moisture_level !== undefined &&
-               plant.moisture_updated_at &&
-               Date.now() - parseUtc(plant.moisture_updated_at).getTime() < 24 * 60 * 60 * 1000 && (
+               isMoistureRecent && (
                 <div className="flex items-start gap-2 text-sm flex-wrap">
                   <Droplet className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
                   <span className="text-muted-foreground flex-shrink-0">{t.moisture}:</span>
@@ -201,6 +206,25 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
             </CollapsibleContent>
           </Collapsible>
         )}
+
+        <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full mb-2">
+              <BarChart2 className="h-4 w-4 mr-2" />
+              {isHistoryOpen ? t.hideHistory : t.showHistory}
+              {isHistoryOpen ? (
+                <ChevronUp className="h-4 w-4 ml-2" />
+              ) : (
+                <ChevronDown className="h-4 w-4 ml-2" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-2 mb-4 p-4 bg-secondary/50 rounded-lg border">
+              <PlantHistoryChart plantId={plant.id} t={t} />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <PlantCardActions
           plant={plant}

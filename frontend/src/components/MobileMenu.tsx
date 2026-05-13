@@ -15,7 +15,10 @@ const LanguageSwitcher = lazy(() =>
   import("@/components/LanguageSwitcher").then((m) => ({ default: m.LanguageSwitcher }))
 );
 import { SubscriptionManager } from "@/components/SubscriptionManager";
+import { SensorAssignmentManager } from "@/components/SensorAssignmentManager";
 import { Subscription } from "@/models/subscription";
+import { Sensor, SensorAssignment } from "@/models/sensor";
+import { Plant } from "@/models/plant";
 
 interface MobileMenuProps {
   currentLanguage: Language;
@@ -24,6 +27,12 @@ interface MobileMenuProps {
   onAddSubscription: (subscription: Partial<Subscription>) => Promise<boolean>;
   onUpdateSubscription: (id: string, subscription: Partial<Subscription>) => Promise<boolean>;
   onDeleteSubscription: (id: string) => Promise<void>;
+  assignments: SensorAssignment[];
+  sensors: Sensor[];
+  activeSensors: Sensor[];
+  plants: Plant[];
+  onAddAssignment: (plant_id: string, sensor_id: string) => Promise<void>;
+  onDeleteAssignment: (id: string) => Promise<void>;
   t: Translations;
 }
 
@@ -34,6 +43,12 @@ export function MobileMenu({
   onAddSubscription,
   onUpdateSubscription,
   onDeleteSubscription,
+  assignments,
+  sensors,
+  activeSensors,
+  plants,
+  onAddAssignment,
+  onDeleteAssignment,
   t
 }: MobileMenuProps) {
   const { theme, setTheme } = useTheme();
@@ -81,6 +96,15 @@ export function MobileMenu({
             onAddSubscription={onAddSubscription}
             onUpdateSubscription={onUpdateSubscription}
             onDeleteSubscription={onDeleteSubscription}
+            t={t}
+          />
+          <SensorAssignmentManager
+            assignments={assignments}
+            sensors={sensors}
+            activeSensors={activeSensors}
+            plants={plants}
+            onAdd={onAddAssignment}
+            onDelete={onDeleteAssignment}
             t={t}
           />
         </div>

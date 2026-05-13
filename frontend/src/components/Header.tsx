@@ -9,7 +9,10 @@ const LanguageSwitcher = lazy(() =>
   import("@/components/LanguageSwitcher").then((m) => ({ default: m.LanguageSwitcher }))
 );
 import { Subscription } from "@/models/subscription";
+import { Sensor, SensorAssignment } from "@/models/sensor";
+import { Plant } from "@/models/plant";
 import { SubscriptionManager } from "@/components/SubscriptionManager";
+import { SensorAssignmentManager } from "@/components/SensorAssignmentManager";
 
 interface HeaderProps {
   language: Language;
@@ -18,6 +21,12 @@ interface HeaderProps {
   onAddSubscription: (subscription: Partial<Subscription>) => Promise<boolean>;
   onUpdateSubscription: (id: string, subscription: Partial<Subscription>) => Promise<boolean>;
   onDeleteSubscription: (id: string) => Promise<void>;
+  assignments: SensorAssignment[];
+  sensors: Sensor[];
+  activeSensors: Sensor[];
+  plants: Plant[];
+  onAddAssignment: (plant_id: string, sensor_id: string) => Promise<void>;
+  onDeleteAssignment: (id: string) => Promise<void>;
   theme: string;
   onToggleTheme: () => void;
   onOpenAddDialog: () => void;
@@ -32,6 +41,12 @@ export const Header = ({
   onAddSubscription,
   onUpdateSubscription,
   onDeleteSubscription,
+  assignments,
+  sensors,
+  activeSensors,
+  plants,
+  onAddAssignment,
+  onDeleteAssignment,
   theme,
   onToggleTheme,
   onOpenAddDialog,
@@ -56,6 +71,12 @@ export const Header = ({
               onAddSubscription={onAddSubscription}
               onUpdateSubscription={onUpdateSubscription}
               onDeleteSubscription={onDeleteSubscription}
+              assignments={assignments}
+              sensors={sensors}
+              activeSensors={activeSensors}
+              plants={plants}
+              onAddAssignment={onAddAssignment}
+              onDeleteAssignment={onDeleteAssignment}
               t={t}
             />
 
@@ -77,6 +98,15 @@ export const Header = ({
                 onAddSubscription={onAddSubscription}
                 onUpdateSubscription={onUpdateSubscription}
                 onDeleteSubscription={onDeleteSubscription}
+                t={t}
+              />
+              <SensorAssignmentManager
+                assignments={assignments}
+                sensors={sensors}
+                activeSensors={activeSensors}
+                plants={plants}
+                onAdd={onAddAssignment}
+                onDelete={onDeleteAssignment}
                 t={t}
               />
             </div>

@@ -2,6 +2,8 @@ import { useState, lazy, Suspense } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { usePlants } from "@/hooks/usePlants";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useSensors } from "@/hooks/useSensors";
+import { useSensorAssignments } from "@/hooks/useSensorAssignments";
 import { Header } from "@/components/Header";
 import { PlantCard } from "@/components/PlantCard";
 import { EmptyPlantState } from "@/components/EmptyPlantState";
@@ -25,6 +27,8 @@ const Index = () => {
 
   const { plants, isAddingPlant, addPlant, updatePlant, waterPlant, deletePlant, waterAllPlants, waterOverduePlants, needsWater, getDaysUntilWatering, fetchSpecies } = usePlants(t);
   const { subscriptions, addSubscription, updateSubscription, deleteSubscription } = useSubscription(t);
+  const { sensors, activeSensors } = useSensors();
+  const { assignments, addAssignment, deleteAssignment } = useSensorAssignments();
 
   const openAddDialog = () => {
     setHasOpenedDialog(true);
@@ -44,7 +48,6 @@ const Index = () => {
     species_username?: string;
     wateringInterval?: string;
     image?: string;
-    sensor_id?: string;
   }) => {
     if (editingPlant) {
       return await updatePlant(editingPlant.id, plantData);
@@ -59,7 +62,6 @@ const Index = () => {
         species_username: plantData.species_username,
         wateringInterval: plantData.wateringInterval,
         image: plantData.image || "",
-        sensor_id: plantData.sensor_id,
       });
     }
   };
@@ -81,6 +83,12 @@ const Index = () => {
           onAddSubscription={addSubscription}
           onUpdateSubscription={updateSubscription}
           onDeleteSubscription={deleteSubscription}
+          assignments={assignments}
+          sensors={sensors}
+          activeSensors={activeSensors}
+          plants={plants}
+          onAddAssignment={addAssignment}
+          onDeleteAssignment={deleteAssignment}
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenAddDialog={openAddDialog}

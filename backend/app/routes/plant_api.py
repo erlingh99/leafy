@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from uuid import UUID
 from io import BytesIO
 from binascii import Error as BinasciiError
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import Response
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,21 +16,24 @@ from ..database import (
     delete_plant as db_delete_plant,
     get_db,
     get_plant as db_get_plant,
+    get_plant_sensor_data,
     get_species as db_get_species,
     water_plant as db_water_plant,
     water_all_plants as db_water_all_plants,
     load_plants_without_images,
     save_plant,
     update_plant as db_update_plant,
-    update_plant_moisture as db_update_plant_moisture,
+    record_moisture_reading,
     get_plant_image as db_get_plant_image,
     get_plant_thumbnail as db_get_plant_thumbnail,
     has_plant_thumbnail as db_has_plant_thumbnail,
     get_hardiness_maps_batch as db_get_hardiness_maps_batch,
+    get_moisture_history as db_get_moisture_history,
+    get_watering_history as db_get_watering_history,
     upsert_species,
     async_session_maker,
 )
-from ..models import Plant, PlantUpdate, PlantResponse, Species
+from ..models import Plant, PlantUpdate, PlantResponse, Species, SensorReading, WateringEvent
 from ..services import (
     PerenualConfigurationError,
     fetch_perenual_enrichment,
@@ -50,7 +53,15 @@ class MoistureReading(BaseModel):
     level: float = PydanticField(ge=0.0, le=100.0)
 
 
-def _plant_response(plant: Plant, *, has_image: bool, has_thumbnail: bool) -> PlantResponse:
+def _plant_response(
+    plant: Plant,
+    *,
+    has_image: bool,
+    has_thumbnail: bool,
+    sensor_id: str | None = None,
+    moisture_level: float | None = None,
+    moisture_updated_at: datetime | None = None,
+) -> PlantResponse:
     return PlantResponse(
         id=plant.id,
         created_at=plant.created_at,
@@ -63,9 +74,9 @@ def _plant_response(plant: Plant, *, has_image: bool, has_thumbnail: bool) -> Pl
         perenual_species_id=plant.perenual_species_id,
         image_url=(f"/api/plants/{plant.id}/image" if has_image else None),
         thumbnail_url=(f"/api/plants/{plant.id}/thumbnail" if has_thumbnail else None),
-        sensor_id=plant.sensor_id,
-        moisture_level=plant.moisture_level,
-        moisture_updated_at=plant.moisture_updated_at,
+        sensor_id=sensor_id,
+        moisture_level=moisture_level,
+        moisture_updated_at=moisture_updated_at,
     )
 
 
@@ -98,11 +109,15 @@ async def _get_composed_hardiness_map(db: AsyncSession, ids: tuple[int, ...]) ->
 @plant_router.get("", response_model=list[PlantResponse])
 async def get_plants(db: AsyncSession = Depends(get_db)) -> list[PlantResponse]:
     rows = await load_plants_without_images(db)
+    _sensor_keys = {"sensor_id", "moisture_level", "moisture_updated_at", "has_image", "has_thumbnail"}
     return [
         _plant_response(
-            Plant(**{k: v for k, v in r.items() if k not in ("has_image", "has_thumbnail")}),
+            Plant(**{k: v for k, v in r.items() if k not in _sensor_keys}),
             has_image=r["has_image"],
             has_thumbnail=r["has_thumbnail"],
+            sensor_id=r.get("sensor_id"),
+            moisture_level=r.get("moisture_level"),
+            moisture_updated_at=r.get("moisture_updated_at"),
         )
         for r in rows
     ]
@@ -149,8 +164,18 @@ async def get_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
     if db_plant is None:
         raise HTTPException(status_code=404, detail="Plant not found")
 
-    thumb_exists = await db_has_plant_thumbnail(db, plant_id)
-    return _plant_response(db_plant, has_image=bool(db_plant.image), has_thumbnail=thumb_exists)
+    thumb_exists, (sensor_id, moisture_level, moisture_updated_at) = await asyncio.gather(
+        db_has_plant_thumbnail(db, plant_id),
+        get_plant_sensor_data(db, plant_id),
+    )
+    return _plant_response(
+        db_plant,
+        has_image=bool(db_plant.image),
+        has_thumbnail=thumb_exists,
+        sensor_id=sensor_id,
+        moisture_level=moisture_level,
+        moisture_updated_at=moisture_updated_at,
+    )
 
 @plant_router.delete("/{plant_id}")
 async def delete_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
@@ -282,16 +307,37 @@ async def water_plant(
 
 
 
+@plant_router.get("/{plant_id}/moisture-history", response_model=list[SensorReading])
+async def get_moisture_history(
+    plant_id: UUID,
+    days: int = Query(default=7, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+):
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    return await db_get_moisture_history(db, plant_id, since)
+
+
+@plant_router.get("/{plant_id}/watering-history", response_model=list[WateringEvent])
+async def get_watering_history(
+    plant_id: UUID,
+    days: int = Query(default=30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+):
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    return await db_get_watering_history(db, plant_id, since)
+
+
 @sensor_router.post("/moisture")
 async def update_moisture(
     reading: MoistureReading,
     db: AsyncSession = Depends(get_db),
 ):
-    """Receive a moisture reading from an ESP32 sensor and persist it."""
-    updated = await db_update_plant_moisture(db, reading.sensor_id, reading.level)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Sensor ID not registered to any plant")
-    return {"message": "Moisture updated successfully"}
+    """Receive a moisture reading from an ESP32 sensor and persist it.
+
+    Always returns 200; updates the sensor's last_seen_at even if not yet assigned to a plant.
+    """
+    await record_moisture_reading(db, reading.sensor_id, reading.level)
+    return {"message": "Moisture received"}
 
 
 # Deduplicates concurrent background-task fetches for the same species name.

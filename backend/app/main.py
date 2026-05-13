@@ -5,7 +5,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 from contextlib import asynccontextmanager
-from .routes import plant_api, subscription_api, health_api
+from .routes import plant_api, subscription_api, health_api, sensor_api
 from .database import init_db, save_hardiness_map, get_hardiness_map, async_session_maker
 from .config import BREVO_API_KEY, SENDER_EMAIL, FRONTEND_DIST
 from .services import get_hardiness_base_maps, send_email
@@ -65,6 +65,8 @@ app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="asse
 # Include API routers
 app.include_router(plant_api.plant_router)
 app.include_router(plant_api.sensor_router)
+app.include_router(sensor_api.sensor_router)
+app.include_router(sensor_api.assignment_router)
 app.include_router(subscription_api.subscription_router)
 app.include_router(health_api.health_router)
 
