@@ -143,6 +143,7 @@ async def update_plant(
         update(PlantDB).where(PlantDB.id == db_plant.id).values(**values)
     )
 
+
 async def water_all_plants(db: AsyncSession) -> None:
     now = datetime.now(timezone.utc)
     await db.execute(update(PlantDB).values(last_watered=now))
@@ -153,6 +154,7 @@ async def water_all_plants(db: AsyncSession) -> None:
         WateringEventDB(id=uuid4(), plant_id=pid, watered_at=now)
         for pid in plant_ids
     ])
+
 
 async def water_plant(db: AsyncSession, plant_id: UUID) -> bool:
     now = datetime.now(timezone.utc)

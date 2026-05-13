@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import NoResultFound
 
 from ..database import (
     get_db,
@@ -47,7 +48,10 @@ async def get_assignments(db: AsyncSession = Depends(get_db)):
 @assignment_router.post("", response_model=SensorAssignment)
 async def create_assignment(request: AssignmentRequest, db: AsyncSession = Depends(get_db)):
     """Assign a sensor to a plant, moving it away from any previous plant."""
-    return await db_upsert_sensor_assignment(db, request.plant_id, request.sensor_id)
+    try:
+        return await db_upsert_sensor_assignment(db, request.plant_id, request.sensor_id)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="Plant not found")
 
 
 @assignment_router.delete("/{assignment_id}")

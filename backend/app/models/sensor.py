@@ -12,8 +12,8 @@ class Sensor(BaseModel):
     @computed_field
     @property
     def is_active(self) -> bool:
-        delta = datetime.now(timezone.utc) - self.last_seen_at.replace(tzinfo=timezone.utc) if self.last_seen_at.tzinfo is None else datetime.now(timezone.utc) - self.last_seen_at
-        return delta.total_seconds() < 86400
+        last_seen = self.last_seen_at if self.last_seen_at.tzinfo is not None else self.last_seen_at.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - last_seen).total_seconds() < 24 * 60 * 60
 
 
 class SensorAssignment(BaseModel):
