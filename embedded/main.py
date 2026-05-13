@@ -21,6 +21,21 @@ adc = machine.ADC(machine.Pin(ADC_PIN))
 adc.init(atten=machine.ADC.ATTN_11DB)
 
 
+def register_sensor():
+    url = "{}/api/sensors/register".format(SERVER_URL)
+    headers = {"Content-Type": "application/json"}
+    body = json.dumps({"sensor_id": SENSOR_ID})
+    try:
+        response = urequests.post(url, headers=headers, data=body)
+        response.close()
+        print("Registered sensor: {}".format(SENSOR_ID))
+    except Exception as e:
+        print("Registration failed: {}".format(e))
+
+
+register_sensor()
+
+
 def read_moisture_percent():
     raw = adc.read_u16()
     level = (ADC_DRY - raw) / (ADC_DRY - ADC_WET) * 100

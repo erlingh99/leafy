@@ -18,7 +18,6 @@ interface PlantDialogProps {
     species_username?: string;
     wateringInterval?: string;
     image?: string;
-    sensor_id?: string;
   }) => Promise<boolean>;
   t: Translations;
 }
@@ -32,7 +31,6 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
     wateringInterval: editingPlant?.watering_interval.toString() || "7",
     // For existing plants we show the image URL for preview; new uploads use data URI
     image: editingPlant?.image_url || "",
-    sensor_id: editingPlant?.sensor_id || "",
   });
   const [originalData, setOriginalData] = useState<{
     name: string;
@@ -40,7 +38,6 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
     species_username: string;
     wateringInterval: string;
     image: string;
-    sensor_id: string;
   } | null>(null);
   const [imageChanged, setImageChanged] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,10 +116,9 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
           species_username: plantData.species_username || undefined,
           wateringInterval: plantData.wateringInterval,
           image: plantData.image || undefined,
-          sensor_id: plantData.sensor_id || undefined,
         });
         if (success) {
-          setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "", sensor_id: "" });
+          setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "" });
           setOriginalData(null);
           onOpenChange(false);
         }
@@ -163,7 +159,6 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         species_username?: string;
         wateringInterval?: string;
         image?: string;
-        sensor_id?: string;
       } = {};
 
       if (!originalData) {
@@ -174,7 +169,6 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         changedFields.species_username = plantData.species_username || "";
         changedFields.wateringInterval = plantData.wateringInterval;
         changedFields.image = plantData.image || "";
-        changedFields.sensor_id = plantData.sensor_id || "";
       } else {
         // Compare and only include changed fields
         // Required fields: only include if changed
@@ -195,12 +189,6 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         if (currentSpeciesUsername !== originalSpeciesUsername) {
           // Send empty string to clear, or the value if set
           changedFields.species_username = plantData.species_username || "";
-        }
-
-        const currentSensorId = plantData.sensor_id || "";
-        const originalSensorId = originalData.sensor_id || "";
-        if (currentSensorId !== originalSensorId) {
-          changedFields.sensor_id = plantData.sensor_id || "";
         }
 
         // Only include image in the payload if the user changed it (new upload or cleared)
@@ -240,14 +228,13 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
         species_username: editingPlant.species_username ?? "",
         wateringInterval: editingPlant.watering_interval.toString(),
         image: editingPlant.image_url || "",
-        sensor_id: editingPlant.sensor_id ?? "",
       };
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlantData(initialData);
       setOriginalData(initialData);
       setImageChanged(false);
     } else {
-      setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "", sensor_id: "" });
+      setPlantData({ name: "", species: "", species_username: "", wateringInterval: "7", image: "" });
       setOriginalData(null);
     }
   }, [editingPlant]);
@@ -335,16 +322,6 @@ export const PlantDialog = ({ open, onOpenChange, editingPlant, onSubmit, t }: P
                 setPlantData({ ...plantData, wateringInterval: e.target.value })
               }
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sensor_id">{t.sensorId} <span className="text-muted-foreground font-normal">{t.sensorIdOptional}</span></Label>
-            <Input
-              id="sensor_id"
-              placeholder={t.sensorIdPlaceholder}
-              value={plantData.sensor_id}
-              onChange={(e) => setPlantData({ ...plantData, sensor_id: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">{t.sensorIdHelper}</p>
           </div>
           <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

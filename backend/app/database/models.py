@@ -8,7 +8,7 @@ from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, Text, 
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .setup import Base
-from ..models import Plant, Species, Subscription, SpeciesDetailsResponse, SpeciesGuideData, HardinessMap
+from ..models import Plant, Species, Subscription, SpeciesDetailsResponse, SpeciesGuideData, HardinessMap, Sensor, SensorReading, WateringEvent
 
 class PlantDB(Base):
     """Database model for plants"""
@@ -34,9 +34,6 @@ class PlantDB(Base):
     perenual_species_id: Mapped[int | None] = mapped_column(
         Integer(), ForeignKey("plant_species.perenual_id", ondelete="SET NULL"), nullable=True
     )
-    sensor_id: Mapped[str | None] = mapped_column(Text(), nullable=True, unique=True)
-    moisture_level: Mapped[float | None] = mapped_column(Float(), nullable=True)
-    moisture_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     @classmethod
     def from_model(cls, plant: Plant) -> "PlantDB":
@@ -53,7 +50,6 @@ class PlantDB(Base):
             image=plant.image,
             thumbnail=getattr(plant, "thumbnail", None),
             perenual_species_id=plant.perenual_species_id,
-            sensor_id=plant.sensor_id,
         )
 
     def to_model(self) -> Plant:
@@ -69,9 +65,6 @@ class PlantDB(Base):
             last_watered=self.last_watered,
             image=self.image,
             perenual_species_id=self.perenual_species_id,
-            sensor_id=self.sensor_id,
-            moisture_level=self.moisture_level,
-            moisture_updated_at=self.moisture_updated_at,
         )
 
 class HardinessMapDB(Base):
@@ -93,7 +86,7 @@ class HardinessMapDB(Base):
             created_at=hardiness_map.created_at,
             updated_at=hardiness_map.updated_at,
         )
-    
+
     def to_model(self) -> HardinessMap:
         return HardinessMap(
             id=self.id,
@@ -101,7 +94,6 @@ class HardinessMapDB(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
         )
-
 
 
 class SpeciesDB(Base):
@@ -135,7 +127,7 @@ class SpeciesDB(Base):
             details=SpeciesDetailsResponse.model_validate(self.details),
             care_guides=SpeciesGuideData.model_validate(self.care_guides) if self.care_guides else None,
         )
-    
+
 class SubscriptionDB(Base):
     """Database model for subscriptions"""
     __tablename__ = "subscriptions"
@@ -149,7 +141,6 @@ class SubscriptionDB(Base):
     name: Mapped[str] = mapped_column(Text())
     email: Mapped[str] = mapped_column(Text(), unique=True)
 
-
     @classmethod
     def from_model(cls, subscription: Subscription) -> "SubscriptionDB":
         """Convert from Pydantic model to SQLAlchemy model"""
@@ -160,7 +151,7 @@ class SubscriptionDB(Base):
             name=subscription.name,
             email=subscription.email
         )
-    
+
     def to_model(self) -> Subscription:
         """Convert to Pydantic model"""
         return Subscription(
@@ -169,4 +160,81 @@ class SubscriptionDB(Base):
             updated_at=self.updated_at,
             name=self.name,
             email=self.email
+        )
+
+
+class SensorDB(Base):
+    """Tracks registered sensors; last_seen_at updated on each registration and moisture POST"""
+    __tablename__ = "sensors"
+
+    sensor_id: Mapped[str] = mapped_column(Text(), primary_key=True)
+    registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def to_model(self) -> Sensor:
+        return Sensor(
+            sensor_id=self.sensor_id,
+            registered_at=self.registered_at,
+            last_seen_at=self.last_seen_at,
+        )
+
+
+class PlantSensorAssignmentDB(Base):
+    """Maps a sensor to a plant; UNIQUE on sensor_id so a sensor belongs to at most one plant"""
+    __tablename__ = "plant_sensor_assignments"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    plant_id: Mapped[UUID] = mapped_column(
+        ForeignKey("plants.id", ondelete="CASCADE"), nullable=False
+    )
+    sensor_id: Mapped[str] = mapped_column(
+        Text(), ForeignKey("sensors.sensor_id", ondelete="CASCADE"), unique=True, nullable=False
+    )
+    assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class SensorReadingDB(Base):
+    """Historical moisture readings linked to a plant at the time of reading"""
+    __tablename__ = "sensor_readings"
+    __table_args__ = (
+        Index("ix_sensor_readings_plant_recorded", "plant_id", "recorded_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    plant_id: Mapped[UUID] = mapped_column(
+        ForeignKey("plants.id", ondelete="CASCADE"), nullable=False
+    )
+    # sensor_id is stored for reference but not a FK; readings are kept even after a sensor goes inactive
+    sensor_id: Mapped[str] = mapped_column(Text(), nullable=False)
+    level: Mapped[float] = mapped_column(Float(), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def to_model(self) -> SensorReading:
+        return SensorReading(
+            id=self.id,
+            plant_id=self.plant_id,
+            sensor_id=self.sensor_id,
+            level=self.level,
+            recorded_at=self.recorded_at,
+        )
+
+
+class WateringEventDB(Base):
+    """Historical record of each time a plant was watered"""
+    __tablename__ = "watering_events"
+    __table_args__ = (
+        Index("ix_watering_events_plant_watered", "plant_id", "watered_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    plant_id: Mapped[UUID] = mapped_column(
+        ForeignKey("plants.id", ondelete="CASCADE"), nullable=False
+    )
+    watered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def to_model(self) -> WateringEvent:
+        return WateringEvent(
+            id=self.id,
+            plant_id=self.plant_id,
+            watered_at=self.watered_at,
         )

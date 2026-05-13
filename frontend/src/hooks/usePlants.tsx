@@ -79,7 +79,6 @@ export const usePlants = (t: Translations) => {
       species_username?: string;
       wateringInterval: string;
       image: string;
-      sensor_id?: string;
     }) => {
       const interval = parseInt(plantData.wateringInterval);
       const response = await fetchWithTimeout('/api/plants', {
@@ -94,7 +93,6 @@ export const usePlants = (t: Translations) => {
           watering_interval: interval,
           image: plantData.image,
           last_watered: new Date().toISOString(),
-          sensor_id: plantData.sensor_id || null,
         }),
       });
 
@@ -356,7 +354,6 @@ export const usePlants = (t: Translations) => {
     species_username?: string;
     wateringInterval: string;
     image: string;
-    sensor_id?: string;
   }) => {
     if (!plantData.name || !plantData.species) {
       toast({
@@ -398,7 +395,6 @@ export const usePlants = (t: Translations) => {
     species_username?: string;
     wateringInterval?: string;
     image?: string;
-    sensor_id?: string;
   }) => {
     if (plantData.wateringInterval !== undefined) {
       const interval = parseInt(plantData.wateringInterval);
@@ -423,9 +419,6 @@ export const usePlants = (t: Translations) => {
       species_username?: string;
       watering_interval?: number;
       image?: string;
-      sensor_id?: string;
-      moisture_level?: number | null;
-      moisture_updated_at?: string | null;
     } = {};
 
     if (plantData.name !== undefined) updatePayload.name = plantData.name;
@@ -433,13 +426,6 @@ export const usePlants = (t: Translations) => {
     if (plantData.species_username !== undefined) updatePayload.species_username = plantData.species_username || "";
     if (plantData.wateringInterval !== undefined) updatePayload.watering_interval = parseInt(plantData.wateringInterval);
     if (plantData.image !== undefined) updatePayload.image = plantData.image || "";
-    if (plantData.sensor_id !== undefined) {
-      updatePayload.sensor_id = plantData.sensor_id || "";
-      if (!plantData.sensor_id) {
-        updatePayload.moisture_level = null;
-        updatePayload.moisture_updated_at = null;
-      }
-    }
 
     try {
       await updatePlantMutation.mutateAsync({ plantId, updatePayload });

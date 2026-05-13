@@ -177,7 +177,26 @@ type StaticTranslationKeys =
   | "sensorId"
   | "sensorIdOptional"
   | "sensorIdPlaceholder"
-  | "sensorIdHelper";
+  | "sensorIdHelper"
+  | "sensorAssignmentButton"
+  | "sensorAssignmentTitle"
+  | "sensorAssignmentDescription"
+  | "sensorAssignmentAdd"
+  | "sensorAssignmentDelete"
+  | "sensorAssignmentClose"
+  | "noSensorAssignments"
+  | "selectSensor"
+  | "selectPlant"
+  | "sensorIdLabel"
+  | "noActiveSensors"
+  | "showHistory"
+  | "hideHistory"
+  | "moistureHistory"
+  | "wateringHistory"
+  | "noHistoryData"
+  | "days7"
+  | "days30"
+  | "days90";
 
 type FunctionTranslationKeys =
   | "plantAddedDescription"
