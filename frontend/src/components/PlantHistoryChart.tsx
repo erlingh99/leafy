@@ -37,17 +37,14 @@ export const PlantHistoryChart = ({ plantId, t }: PlantHistoryChartProps) => {
     return d.toLocaleDateString(t.locale, { month: "short", day: "numeric" });
   };
 
-  const formatTooltipDate = (iso: string) =>
-    parseUtc(iso).toLocaleString(t.locale, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
   const hasMoisture = moistureReadings.length > 0;
   const hasWatering = wateringEvents.length > 0;
   const hasData = hasMoisture || hasWatering;
+
+  const moistureData = moistureReadings.map((r) => ({
+    ...r,
+    ts: parseUtc(r.recorded_at).getTime(),
+  }));
 
   return (
     <div className="space-y-3">
@@ -80,11 +77,14 @@ export const PlantHistoryChart = ({ plantId, t }: PlantHistoryChartProps) => {
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2">{t.moistureHistory}</p>
           <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={moistureReadings} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
+            <LineChart data={moistureData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis
-                dataKey="recorded_at"
-                tickFormatter={formatDate}
+                dataKey="ts"
+                type="number"
+                scale="time"
+                domain={["dataMin", "dataMax"]}
+                tickFormatter={(ms) => new Date(ms).toLocaleDateString(t.locale, { month: "short", day: "numeric" })}
                 tick={{ fontSize: 10 }}
                 className="fill-muted-foreground"
                 minTickGap={32}
@@ -96,14 +96,19 @@ export const PlantHistoryChart = ({ plantId, t }: PlantHistoryChartProps) => {
                 tickCount={5}
               />
               <Tooltip
-                labelFormatter={(label) => typeof label === "string" ? formatTooltipDate(label) : String(label)}
+                labelFormatter={(ms) => new Date(Number(ms)).toLocaleString(t.locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 formatter={(value) => [`${Math.round(Number(value))}%`, t.moisture]}
-                contentStyle={{ fontSize: 12 }}
+                contentStyle={{
+                  fontSize: 12,
+                  backgroundColor: "hsl(var(--popover))",
+                  borderColor: "hsl(var(--border))",
+                  color: "hsl(var(--popover-foreground))",
+                }}
               />
               {wateringEvents.map((ev) => (
                 <ReferenceLine
                   key={ev.id}
-                  x={ev.watered_at}
+                  x={parseUtc(ev.watered_at).getTime()}
                   stroke="#60a5fa"
                   strokeDasharray="4 2"
                   label={{ value: "💧", position: "top", fontSize: 10 }}
@@ -129,7 +134,7 @@ export const PlantHistoryChart = ({ plantId, t }: PlantHistoryChartProps) => {
         /* Watering-only timeline (no moisture data) */
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2">{t.wateringHistory}</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
             {wateringEvents.map((ev) => (
               <div
                 key={ev.id}

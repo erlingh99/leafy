@@ -29,13 +29,13 @@ export const LongTextDisplay = ({ text, maxLength, t }: { text: string; maxLengt
     const [isOpen, setIsOpen] = useState(false);
 
     if (text.length <= maxLength) {
-        return <span>{text}</span>;
+        return <span className="text-muted-foreground">{text}</span>;
     }
 
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <div className="flex items-start gap-1 flex-wrap">
-                {!isOpen && <span>{truncateText(text, maxLength)}</span>}
+                {!isOpen && <span className="text-muted-foreground">{truncateText(text, maxLength)}</span>}
                 <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-auto p-0 text-primary">
                         {isOpen ? (
