@@ -5,13 +5,13 @@ import { Translations } from "@/translations/types";
 import { Subscription } from "@/models/subscription";
 
 
-export const useSubscription = (t: Translations) => {
+export const useSubscription = (t: Translations, enabled = false) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Load subscriptions using useQuery
   const { data: subscriptions = [] } = useQuery({
     queryKey: ['subscriptions'],
+    enabled,
     queryFn: async () => {
       const response = await fetchWithTimeout(`/api/subscriptions`, {
         method: 'GET',

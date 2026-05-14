@@ -8,12 +8,13 @@ async function fetchAssignments(): Promise<SensorAssignment[]> {
   return res.json();
 }
 
-export function useSensorAssignments() {
+export function useSensorAssignments(enabled = false) {
   const queryClient = useQueryClient();
 
   const { data: assignments = [] } = useQuery<SensorAssignment[]>({
     queryKey: ["sensor-assignments"],
     queryFn: fetchAssignments,
+    enabled,
   });
 
   const addMutation = useMutation({
