@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -24,7 +24,17 @@ const parseUtc = (s: string) => new Date(s.endsWith("Z") ? s : s + "Z");
 
 export const PlantHistoryChart = ({ plantId, t }: PlantHistoryChartProps) => {
   const [days, setDays] = useState<7 | 30 | 90>(30);
-  const { moistureReadings, wateringEvents, isLoading } = usePlantHistory(plantId, days);
+  const { moistureReadings, wateringEvents, isLoading } = usePlantHistory(plantId, days, true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => setShowSkeleton(true), 300);
+    return () => {
+      clearTimeout(timer);
+      setShowSkeleton(false);
+    };
+  }, [isLoading]);
 
   const dayLabels: Record<number, string> = {
     7: t.days7,
@@ -65,19 +75,19 @@ export const PlantHistoryChart = ({ plantId, t }: PlantHistoryChartProps) => {
         ))}
       </div>
 
-      {isLoading ? (
+      {showSkeleton ? (
         <div className="space-y-2">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-32 w-full" />
         </div>
-      ) : !hasData ? (
+      ) : isLoading ? null :!hasData ? (
         <p className="text-sm text-muted-foreground py-4 text-center">{t.noHistoryData}</p>
       ) : hasMoisture ? (
         /* Moisture line chart with watering event reference lines */
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2">{t.moistureHistory}</p>
           <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={moistureData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
+            <LineChart data={moistureData} margin={{ top: 20, right: 8, bottom: 4, left: -20 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis
                 dataKey="ts"

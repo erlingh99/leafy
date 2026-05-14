@@ -14,18 +14,18 @@ async function fetchWateringHistory(plantId: string, days: number): Promise<Wate
   return res.json();
 }
 
-export function usePlantHistory(plantId: string, days: number) {
+export function usePlantHistory(plantId: string, days: number, enabled = false) {
   const moistureQuery = useQuery<SensorReading[]>({
     queryKey: ["moisture-history", plantId, days],
     queryFn: () => fetchMoistureHistory(plantId, days),
-    enabled: !!plantId,
+    enabled: enabled && !!plantId,
     staleTime: 60_000,
   });
 
   const wateringQuery = useQuery<WateringEvent[]>({
     queryKey: ["watering-history", plantId, days],
     queryFn: () => fetchWateringHistory(plantId, days),
-    enabled: !!plantId,
+    enabled: enabled && !!plantId,
     staleTime: 60_000,
   });
 

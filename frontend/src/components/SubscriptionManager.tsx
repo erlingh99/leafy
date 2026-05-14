@@ -13,23 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Subscription } from "@/models/subscription";
 import { Translations } from "@/translations/types";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface SubscriptionManagerProps {
-  subscriptions: Subscription[];
-  onAddSubscription: (subscription: Partial<Subscription>) => Promise<boolean>;
-  onUpdateSubscription: (id: string, subscription: Partial<Subscription>) => Promise<boolean>;
-  onDeleteSubscription: (id: string) => Promise<void>;
   t: Translations;
 }
 
-export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
-  subscriptions,
-  onAddSubscription,
-  onUpdateSubscription,
-  onDeleteSubscription,
-  t
-}) => {
+export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ t }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { subscriptions, addSubscription: onAddSubscription, updateSubscription: onUpdateSubscription, deleteSubscription: onDeleteSubscription } = useSubscription(t, isOpen);
   const [newSubscription, setNewSubscription] = useState({ name: "", email: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSubscription, setEditingSubscription] = useState({ name: "", email: "" });

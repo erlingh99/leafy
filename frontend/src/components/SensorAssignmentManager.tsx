@@ -11,30 +11,23 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sensor, SensorAssignment } from "@/models/sensor";
 import { Plant } from "@/models/plant";
 import { Translations } from "@/translations/types";
+import { useSensors } from "@/hooks/useSensors";
+import { useSensorAssignments } from "@/hooks/useSensorAssignments";
 
 interface SensorAssignmentManagerProps {
-  assignments: SensorAssignment[];
-  sensors: Sensor[];
-  activeSensors: Sensor[];
   plants: Plant[];
-  onAdd: (plant_id: string, sensor_id: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
   t: Translations;
 }
 
 export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = ({
-  assignments,
-  sensors,
-  activeSensors,
   plants,
-  onAdd,
-  onDelete,
   t,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { sensors, activeSensors } = useSensors(isOpen);
+  const { assignments, addAssignment: onAdd, deleteAssignment: onDelete } = useSensorAssignments(isOpen);
   const [selectedPlantId, setSelectedPlantId] = useState("");
   const [selectedSensorId, setSelectedSensorId] = useState("");
   const [customSensorId, setCustomSensorId] = useState("");

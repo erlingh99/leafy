@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Droplet, Calendar, Info, ChevronDown, ChevronUp, HelpCircle, BarChart2, Loader2,
+  Droplet, Calendar, Info, ChevronDown, ChevronUp, HelpCircle, BarChart2,
 } from "lucide-react";
-import { usePlantHistory } from "@/hooks/usePlantHistory";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -30,12 +29,9 @@ const parseUtc = (utcStr: string) =>
 
 export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDelete, fetchSpecies, t }: PlantCardProps) => {
   const [isSpeciesOpen, setIsSpeciesOpen] = useState(false);
-  const [historyRequested, setHistoryRequested] = useState(false);
-  const [historyClosed, setHistoryClosed] = useState(false);
-  const { isLoading: isHistoryLoading } = usePlantHistory(plant.id, 30);
-  const isHistoryOpen = historyRequested && !isHistoryLoading && !historyClosed;
-  const isHistoryPending = historyRequested && isHistoryLoading;
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [moistureTooltipOpen, setMoistureTooltipOpen] = useState(false);
+  const isTouchRef = useRef(false);
   const [speciesData, setSpeciesData] = useState<Species | null>(null);
   const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
   const hasFetchedRef = useRef(false);
@@ -119,48 +115,53 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
                 </span>
               </div>
               {plant.moisture_level !== null && plant.moisture_level !== undefined &&
-               isMoistureRecent && (
-                <div className="flex items-start gap-2 text-sm flex-wrap">
-                  <Droplet className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-muted-foreground flex-shrink-0">{t.moisture}:</span>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        plant.moisture_level >= 60
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                          : plant.moisture_level >= 30
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
-                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                      }`}
-                    >
-                      {Math.round(plant.moisture_level)}%
-                    </span>
-                    <Tooltip delayDuration={0} open={moistureTooltipOpen} onOpenChange={setMoistureTooltipOpen}>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="-m-1 p-1 rounded flex-shrink-0 touch-manipulation"
-                          aria-label={t.moistureGuideAriaLabel}
-                          onClick={() => setMoistureTooltipOpen(v => !v)}
-                        >
-                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[200px] text-xs leading-relaxed">
-                        <p className="font-semibold mb-1">{t.moistureGuideTitle}</p>
-                        <p><span className="text-green-400">●</span> {t.moistureGuideMoist}</p>
-                        <p><span className="text-amber-400">●</span> {t.moistureGuideGettingDry}</p>
-                        <p><span className="text-red-400">●</span> {t.moistureGuideDry}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                isMoistureRecent && (
+                  <div className="flex items-start gap-2 text-sm flex-wrap">
+                    <Droplet className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground flex-shrink-0">{t.moisture}:</span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${plant.moisture_level >= 60
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : plant.moisture_level >= 30
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                          }`}
+                      >
+                        {Math.round(plant.moisture_level)}%
+                      </span>
+                      <Tooltip delayDuration={0} open={moistureTooltipOpen} onOpenChange={(open) => {
+                        if (!isTouchRef.current) setMoistureTooltipOpen(open);
+                      }}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="-m-1 p-1 rounded flex-shrink-0 touch-manipulation"
+                            aria-label={t.moistureGuideAriaLabel}
+                            onPointerDown={(e) => { isTouchRef.current = e.pointerType === 'touch'; }}
+                            onClick={() => {
+                              setMoistureTooltipOpen(v => !v);
+                              setTimeout(() => { isTouchRef.current = false; }, 0);
+                            }}
+                          >
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[200px] text-xs leading-relaxed">
+                          <p className="font-semibold mb-1">{t.moistureGuideTitle}</p>
+                          <p><span className="text-green-400">●</span> {t.moistureGuideMoist}</p>
+                          <p><span className="text-amber-400">●</span> {t.moistureGuideGettingDry}</p>
+                          <p><span className="text-red-400">●</span> {t.moistureGuideDry}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    {plant.moisture_updated_at && (
+                      <span className="text-xs text-muted-foreground">
+                        {parseUtc(plant.moisture_updated_at).toLocaleString(t.locale)}
+                      </span>
+                    )}
                   </div>
-                  {plant.moisture_updated_at && (
-                    <span className="text-xs text-muted-foreground">
-                      {parseUtc(plant.moisture_updated_at).toLocaleString(t.locale)}
-                    </span>
-                  )}
-                </div>
-              )}
+                )}
               <div className="text-sm font-medium">
                 {(() => {
                   const absFloat = Math.abs(daysUntil);
@@ -202,38 +203,22 @@ export const PlantCard = ({ plant, isOverdue, daysUntil, onWater, onEdit, onDele
               <div className="mt-4 mb-4 p-4 bg-secondary/50 rounded-lg border">
                 {speciesData ? (
                   <SpeciesInfoPanel speciesData={speciesData} t={t} />
-                ) : (
+                ) : !isLoadingSpecies ? (
                   <div className="text-sm text-muted-foreground">
                     {t.speciesInfoNotAvailable || "Species information not available"}
                   </div>
-                )}
+                ) : null}
               </div>
             </CollapsibleContent>
           </Collapsible>
         )}
 
-        <Collapsible
-          open={isHistoryOpen}
-          onOpenChange={(open) => {
-            if (open) {
-              setHistoryRequested(true);
-              setHistoryClosed(false);
-            } else {
-              setHistoryClosed(true);
-            }
-          }}
-        >
+        <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" className="w-full mb-2">
-              {isHistoryPending
-                ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                : <BarChart2 className="h-4 w-4 mr-2" />}
-              {isHistoryPending
-                ? t.loading
-                : isHistoryOpen ? t.hideHistory : t.showHistory}
-              {!isHistoryPending && (isHistoryOpen
-                ? <ChevronUp className="h-4 w-4 ml-2" />
-                : <ChevronDown className="h-4 w-4 ml-2" />)}
+              <BarChart2 className="h-4 w-4 mr-2" />
+              {isHistoryOpen ? t.hideHistory : t.showHistory}
+              {isHistoryOpen ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent>

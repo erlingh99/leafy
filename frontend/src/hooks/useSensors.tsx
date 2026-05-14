@@ -8,11 +8,11 @@ async function fetchSensors(): Promise<Sensor[]> {
   return res.json();
 }
 
-export function useSensors() {
+export function useSensors(enabled = false) {
   const { data: sensors = [] } = useQuery<Sensor[]>({
     queryKey: ["sensors"],
     queryFn: fetchSensors,
-    refetchInterval: 30_000,
+    enabled,
   });
 
   const activeSensors = sensors.filter((s) => s.is_active);

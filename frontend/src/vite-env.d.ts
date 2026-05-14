@@ -1,1 +1,10 @@
 /// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_MOCK?: string;
+  readonly VITE_MOCK_DELAY?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
