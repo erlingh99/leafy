@@ -2,7 +2,7 @@ import asyncio
 import json
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,7 +58,7 @@ async def get_sensors(db: AsyncSession = Depends(get_db)):
 
 
 @sensor_router.get("/{sensor_id}/calibrate/stream")
-async def calibrate_stream(sensor_id: str, request: Request):
+async def calibrate_stream(sensor_id: str):
     """SSE stream of 1 Hz readings from the sensor's calibration TCP server.
 
     Opens a TCP connection to leafy-{sensor_id}.{domain}:{port} and relays
@@ -69,15 +69,7 @@ async def calibrate_stream(sensor_id: str, request: Request):
     port = SENSOR_CALIBRATION_PORT
 
     async def generator():
-        try:
-            reader, writer = await asyncio.open_connection(host, port)
-        except OSError as e:
-            yield "data: {}\n\n".format(json.dumps({"error": str(e)}))
-            return
-
         if sensor_id in _sensor_connections:
-            writer.close()
-            await writer.wait_closed()
             yield "data: {}\n\n".format(
                 json.dumps(
                     {
@@ -87,11 +79,19 @@ async def calibrate_stream(sensor_id: str, request: Request):
             )
             return
 
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(host, port), timeout=5.0
+            )
+        except (OSError, asyncio.TimeoutError) as e:
+            yield "data: {}\n\n".format(json.dumps({"error": str(e)}))
+            return
+
         _sensor_connections[sensor_id] = (reader, writer)
         _sensor_locks[sensor_id] = asyncio.Lock()
 
         try:
-            while not await request.is_disconnected():
+            while True:
                 try:
                     line = await asyncio.wait_for(reader.readline(), timeout=3.0)
                     if not line:
