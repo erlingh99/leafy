@@ -96,6 +96,7 @@ class TestShrinkImage:
 
     def test_invalid_bytes_raises_http_exception(self):
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             shrink_image(b"not an image")
         assert exc_info.value.status_code == 400
@@ -122,6 +123,7 @@ class TestCreateThumbnail:
 
     def test_invalid_bytes_raises_http_exception(self):
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             create_thumbnail(b"garbage")
         assert exc_info.value.status_code == 400

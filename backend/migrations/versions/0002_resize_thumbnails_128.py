@@ -5,14 +5,15 @@ Revises: 0001_initial_schema
 Create Date: 2026-04-27 00:00:00
 
 """
+
 from typing import Sequence, Union
 from io import BytesIO
 
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = '0002_resize_thumbnails_128'
-down_revision: Union[str, Sequence[str], None] = '0001_initial_schema'
+revision: str = "0002_resize_thumbnails_128"
+down_revision: Union[str, Sequence[str], None] = "0001_initial_schema"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -26,7 +27,9 @@ def _regenerate_thumbnail(image_bytes: bytes) -> bytes | None:
 
         with Image.open(BytesIO(image_bytes)) as img:
             img = ImageOps.exif_transpose(img)
-            thumb = ImageOps.fit(img, (THUMBNAIL_SIZE, THUMBNAIL_SIZE), method=Image.Resampling.LANCZOS)
+            thumb = ImageOps.fit(
+                img, (THUMBNAIL_SIZE, THUMBNAIL_SIZE), method=Image.Resampling.LANCZOS
+            )
             thumb = thumb.convert("RGB")
             buf = BytesIO()
             thumb.save(buf, format="JPEG", quality=75, optimize=True)
@@ -37,7 +40,9 @@ def _regenerate_thumbnail(image_bytes: bytes) -> bytes | None:
 
 def upgrade() -> None:
     conn = op.get_bind()
-    rows = conn.execute(sa.text("SELECT id, image FROM plants WHERE image IS NOT NULL")).fetchall()
+    rows = conn.execute(
+        sa.text("SELECT id, image FROM plants WHERE image IS NOT NULL")
+    ).fetchall()
     for plant_id, image_bytes in rows:
         new_thumb = _regenerate_thumbnail(bytes(image_bytes))
         if new_thumb is not None:
@@ -58,14 +63,18 @@ def downgrade() -> None:
     # the original images, so downgrade regenerates at the previous default size.
     PREV_SIZE = 400
     conn = op.get_bind()
-    rows = conn.execute(sa.text("SELECT id, image FROM plants WHERE image IS NOT NULL")).fetchall()
+    rows = conn.execute(
+        sa.text("SELECT id, image FROM plants WHERE image IS NOT NULL")
+    ).fetchall()
     for plant_id, image_bytes in rows:
         try:
             from PIL import Image, ImageOps
 
             with Image.open(BytesIO(bytes(image_bytes))) as img:
                 img = ImageOps.exif_transpose(img)
-                thumb = ImageOps.fit(img, (PREV_SIZE, PREV_SIZE), method=Image.Resampling.LANCZOS)
+                thumb = ImageOps.fit(
+                    img, (PREV_SIZE, PREV_SIZE), method=Image.Resampling.LANCZOS
+                )
                 thumb = thumb.convert("RGB")
                 buf = BytesIO()
                 thumb.save(buf, format="JPEG", quality=75, optimize=True)

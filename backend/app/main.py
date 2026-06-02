@@ -6,13 +6,19 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import logging
 from contextlib import asynccontextmanager
 from .routes import plant_api, subscription_api, health_api, sensor_api
-from .database import init_db, save_hardiness_map, get_hardiness_map, async_session_maker
+from .database import (
+    init_db,
+    save_hardiness_map,
+    get_hardiness_map,
+    async_session_maker,
+)
 from .config import BREVO_API_KEY, SENDER_EMAIL, FRONTEND_DIST
 from .services import get_hardiness_base_maps, send_email
 from .models import HardinessMap
 
-logger = logging.getLogger('uvicorn.error')
+logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.DEBUG)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,25 +32,35 @@ async def lifespan(app: FastAPI):
             trigger="cron",
             hour=12,
             minute=0,
-            misfire_grace_time=12*60*60, #12 hours
-            args=(BREVO_API_KEY, )
+            misfire_grace_time=12 * 60 * 60,  # 12 hours
+            args=(BREVO_API_KEY,),
         )
         scheduler.start()
         logger.debug("Email reminders activated")
     else:
-        logger.debug("Skipping email reminders (missing %s)", ", ".join(
-            k for k, v in [("BREVO_API_KEY", BREVO_API_KEY), ("SENDER_EMAIL", SENDER_EMAIL)] if not v
-        ))
+        logger.debug(
+            "Skipping email reminders (missing %s)",
+            ", ".join(
+                k
+                for k, v in [
+                    ("BREVO_API_KEY", BREVO_API_KEY),
+                    ("SENDER_EMAIL", SENDER_EMAIL),
+                ]
+                if not v
+            ),
+        )
 
     async with async_session_maker() as db:
-        map = await get_hardiness_map(db ,0)
+        map = await get_hardiness_map(db, 0)
 
     if map is None:
         logger.debug("Maps not found in database. Fetching...")
         basemaps = await get_hardiness_base_maps()
         async with async_session_maker() as db:
             for idx, map in basemaps:
-                await save_hardiness_map(db, hardiness_map=HardinessMap(id=idx, image=map))
+                await save_hardiness_map(
+                    db, hardiness_map=HardinessMap(id=idx, image=map)
+                )
             await db.commit()
 
     logger.debug("Initialized")
@@ -56,8 +72,9 @@ async def lifespan(app: FastAPI):
         if scheduler:
             scheduler.shutdown()
 
+
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(GZipMiddleware, minimum_size = 1000, compresslevel=5)
+app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
 
 # Mount static files for assets
 app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
@@ -69,6 +86,7 @@ app.include_router(sensor_api.sensor_router)
 app.include_router(sensor_api.assignment_router)
 app.include_router(subscription_api.subscription_router)
 app.include_router(health_api.health_router)
+
 
 # Catch-all route for SPA - must be last
 @app.get("/{full_path:path}", include_in_schema=False)

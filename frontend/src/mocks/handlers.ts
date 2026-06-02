@@ -81,7 +81,7 @@ export const handlers = [
       plant_id: plant.id,
       watered_at: plant.last_watered,
     });
-    return new HttpResponse(null, { status: 200 });
+    return HttpResponse.json({ result: "watered", message: "Plant watered successfully" });
   })),
 
   // Species info (before /:plantId to avoid collision)

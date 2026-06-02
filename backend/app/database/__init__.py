@@ -1,4 +1,5 @@
 from .interaction import (
+    WaterResult,
     delete_plant,
     delete_subscription,
     get_plant,
@@ -28,8 +29,18 @@ from .interaction import (
     delete_sensor_assignment,
     get_moisture_history,
     get_watering_history,
+    update_sensor_calibration,
 )
-from .models import PlantDB, SpeciesDB, SubscriptionDB, HardinessMapDB, SensorDB, PlantSensorAssignmentDB, SensorReadingDB, WateringEventDB
+from .models import (
+    PlantDB,
+    SpeciesDB,
+    SubscriptionDB,
+    HardinessMapDB,
+    SensorDB,
+    PlantSensorAssignmentDB,
+    SensorReadingDB,
+    WateringEventDB,
+)
 from .setup import Base, get_db, init_db, async_session_maker
 
 __all__ = [
@@ -64,6 +75,7 @@ __all__ = [
     "get_plant_image",
     "get_plant_thumbnail",
     "has_plant_thumbnail",
+    "WaterResult",
     "water_plant",
     "water_all_plants",
     "async_session_maker",
@@ -74,4 +86,5 @@ __all__ = [
     "delete_sensor_assignment",
     "get_moisture_history",
     "get_watering_history",
+    "update_sensor_calibration",
 ]

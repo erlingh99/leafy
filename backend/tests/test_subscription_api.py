@@ -68,7 +68,9 @@ async def test_update_subscription_name(client):
 
 
 async def test_update_subscription_not_found(client):
-    response = await client.patch(f"/api/subscriptions/{uuid4()}", json={"name": "Ghost"})
+    response = await client.patch(
+        f"/api/subscriptions/{uuid4()}", json={"name": "Ghost"}
+    )
     assert response.status_code == 404
 
 

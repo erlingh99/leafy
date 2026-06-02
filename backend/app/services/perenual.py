@@ -1,6 +1,7 @@
 """
 Integration helpers for the Perenual Plant Open API.
 """
+
 import asyncio
 from typing import Any
 import logging
@@ -24,7 +25,7 @@ from ..models import (
 PERENUAL_TIMEOUT = 20  # seconds
 _HARDINESS_OVERLAY_OPACITY = 0.8
 
-logger = logging.getLogger('uvicorn.error')
+logger = logging.getLogger("uvicorn.error")
 
 
 class PerenualConfigurationError(RuntimeError):
@@ -44,7 +45,9 @@ async def get_perenual_species_id(species_query: str) -> SpeciesListData:
     if not species_query:
         raise ValueError("Species query must be provided to enrich plant data.")
     if not PERENUAL_API_KEY:
-        raise PerenualConfigurationError("PERENUAL_API_KEY is not configured in the environment.")
+        raise PerenualConfigurationError(
+            "PERENUAL_API_KEY is not configured in the environment."
+        )
 
     async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
         species_candidates = await _search_species(client, species_query)
@@ -64,7 +67,10 @@ async def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
         species: The species data from the species list endpoint
     """
     if species.id > 3000:
-        logger.warning("Species ID %s is above 3000, skipping details and care guides API calls", species.id)
+        logger.warning(
+            "Species ID %s is above 3000, skipping details and care guides API calls",
+            species.id,
+        )
         return Species(
             perenual_id=species.id,
             details=SpeciesDetailsResponse(
@@ -82,7 +88,9 @@ async def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
         )
 
     if not PERENUAL_API_KEY:
-        raise PerenualConfigurationError("PERENUAL_API_KEY is not configured in the environment.")
+        raise PerenualConfigurationError(
+            "PERENUAL_API_KEY is not configured in the environment."
+        )
 
     async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
         details = await _fetch_details(client, species.id)
@@ -104,7 +112,9 @@ async def get_hardiness_base_maps() -> list[tuple[int, bytes]]:
             response = await client.get(url, timeout=PERENUAL_TIMEOUT)
             response.raise_for_status()
         except httpx.HTTPError as exc:
-            raise ValueError(f"Perenual API call to get hardiness-map base map {i} failed.") from exc
+            raise ValueError(
+                f"Perenual API call to get hardiness-map base map {i} failed."
+            ) from exc
         return (i, response.content)
 
     async with httpx.AsyncClient() as client:
@@ -142,7 +152,9 @@ def _select_lowest_id(candidates: list[SpeciesListData]) -> SpeciesListData:
     return candidate
 
 
-async def _fetch_details(client: httpx.AsyncClient, species_id: int) -> SpeciesDetailsResponse:
+async def _fetch_details(
+    client: httpx.AsyncClient, species_id: int
+) -> SpeciesDetailsResponse:
     logger.debug("Getting details for species %s", species_id)
     payload = await _request(client, f"/v2/species/details/{species_id}")
     try:
@@ -204,7 +216,9 @@ async def _request(
     url = f"{PERENUAL_BASE_URL.rstrip('/')}{path}"
 
     try:
-        response = await client.get(url, params=request_params, timeout=PERENUAL_TIMEOUT)
+        response = await client.get(
+            url, params=request_params, timeout=PERENUAL_TIMEOUT
+        )
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         raise ValueError(

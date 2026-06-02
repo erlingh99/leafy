@@ -1,14 +1,40 @@
 """
 SQLite storage backend for plants
 """
+
+from enum import Enum
 from uuid import UUID, uuid4
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models import Plant, Species, Subscription, HardinessMap, Sensor, SensorAssignment, SensorReading, WateringEvent
-from .models import PlantDB, SpeciesDB, SubscriptionDB, HardinessMapDB, SensorDB, PlantSensorAssignmentDB, SensorReadingDB, WateringEventDB
+from ..models import (
+    Plant,
+    Species,
+    Subscription,
+    HardinessMap,
+    Sensor,
+    SensorAssignment,
+    SensorReading,
+    WateringEvent,
+)
+from .models import (
+    PlantDB,
+    SpeciesDB,
+    SubscriptionDB,
+    HardinessMapDB,
+    SensorDB,
+    PlantSensorAssignmentDB,
+    SensorReadingDB,
+    WateringEventDB,
+)
+
+
+class WaterResult(str, Enum):
+    WATERED = "watered"
+    DEBOUNCED = "debounced"
+    NOT_FOUND = "not_found"
 
 
 async def load_plants(db: AsyncSession) -> dict[UUID, Plant]:
@@ -68,26 +94,30 @@ async def load_plants_without_images(db: AsyncSession) -> list[dict]:
     rows = result.all()
     plants: list[dict] = []
     for row in rows:
-        plants.append({
-            "id": row.id,
-            "created_at": row.created_at,
-            "updated_at": row.updated_at,
-            "name": row.name,
-            "species_username": row.species_username,
-            "species": row.species,
-            "watering_interval": row.watering_interval,
-            "last_watered": row.last_watered,
-            "perenual_species_id": row.perenual_species_id,
-            "sensor_id": row.sensor_id,
-            "moisture_level": row.moisture_level,
-            "moisture_updated_at": row.moisture_updated_at,
-            "has_image": bool(row.has_image),
-            "has_thumbnail": bool(row.has_thumbnail),
-        })
+        plants.append(
+            {
+                "id": row.id,
+                "created_at": row.created_at,
+                "updated_at": row.updated_at,
+                "name": row.name,
+                "species_username": row.species_username,
+                "species": row.species,
+                "watering_interval": row.watering_interval,
+                "last_watered": row.last_watered,
+                "perenual_species_id": row.perenual_species_id,
+                "sensor_id": row.sensor_id,
+                "moisture_level": row.moisture_level,
+                "moisture_updated_at": row.moisture_updated_at,
+                "has_image": bool(row.has_image),
+                "has_thumbnail": bool(row.has_thumbnail),
+            }
+        )
     return plants
 
 
-async def get_plant_sensor_data(db: AsyncSession, plant_id: UUID) -> tuple[str | None, float | None, datetime | None]:
+async def get_plant_sensor_data(
+    db: AsyncSession, plant_id: UUID
+) -> tuple[str | None, float | None, datetime | None]:
     """Return (sensor_id, moisture_level, moisture_updated_at) for a single plant."""
     sensor_result = await db.execute(
         select(PlantSensorAssignmentDB.sensor_id)
@@ -109,7 +139,9 @@ async def get_plant_sensor_data(db: AsyncSession, plant_id: UUID) -> tuple[str |
     return sensor_id, moisture_level, moisture_updated_at
 
 
-async def save_plant(db: AsyncSession, plant: Plant, thumbnail: bytes | None = None) -> None:
+async def save_plant(
+    db: AsyncSession, plant: Plant, thumbnail: bytes | None = None
+) -> None:
     """Save a single plant to the database."""
     db_plant = PlantDB.from_model(plant)
     if thumbnail is not None:
@@ -139,25 +171,50 @@ async def update_plant(
     if set_thumbnail:
         values["thumbnail"] = thumbnail
 
+    await db.execute(update(PlantDB).where(PlantDB.id == db_plant.id).values(**values))
+
+
+async def water_all_plants(db: AsyncSession, *, debounce_hours: float) -> None:
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=debounce_hours)
+
+    recent = await db.execute(
+        select(WateringEventDB.plant_id)
+        .where(WateringEventDB.watered_at >= cutoff)
+        .distinct()
+    )
+    skip_ids = set(recent.scalars().all())
+
+    all_result = await db.execute(select(PlantDB.id))
+    plant_ids = [pid for pid in all_result.scalars().all() if pid not in skip_ids]
+
+    if not plant_ids:
+        return
+
     await db.execute(
-        update(PlantDB).where(PlantDB.id == db_plant.id).values(**values)
+        update(PlantDB).where(PlantDB.id.in_(plant_ids)).values(last_watered=now)
+    )
+    db.add_all(
+        [WateringEventDB(id=uuid4(), plant_id=pid, watered_at=now) for pid in plant_ids]
     )
 
 
-async def water_all_plants(db: AsyncSession) -> None:
+async def water_plant(
+    db: AsyncSession, plant_id: UUID, *, debounce_hours: float = 4.0
+) -> WaterResult:
     now = datetime.now(timezone.utc)
-    await db.execute(update(PlantDB).values(last_watered=now))
 
-    result = await db.execute(select(PlantDB.id))
-    plant_ids = result.scalars().all()
-    db.add_all([
-        WateringEventDB(id=uuid4(), plant_id=pid, watered_at=now)
-        for pid in plant_ids
-    ])
+    cutoff = now - timedelta(hours=debounce_hours)
+    recent = await db.execute(
+        select(WateringEventDB.id)
+        .where(
+            WateringEventDB.plant_id == plant_id, WateringEventDB.watered_at >= cutoff
+        )
+        .limit(1)
+    )
+    if recent.scalar_one_or_none() is not None:
+        return WaterResult.DEBOUNCED
 
-
-async def water_plant(db: AsyncSession, plant_id: UUID) -> bool:
-    now = datetime.now(timezone.utc)
     stmt = (
         update(PlantDB)
         .where(PlantDB.id == plant_id)
@@ -168,7 +225,8 @@ async def water_plant(db: AsyncSession, plant_id: UUID) -> bool:
     updated_id = result.scalar_one_or_none()
     if updated_id is not None:
         db.add(WateringEventDB(id=uuid4(), plant_id=plant_id, watered_at=now))
-    return updated_id is not None
+        return WaterResult.WATERED
+    return WaterResult.NOT_FOUND
 
 
 async def register_sensor(db: AsyncSession, sensor_id: str) -> Sensor:
@@ -190,11 +248,34 @@ async def get_all_sensors(db: AsyncSession) -> list[Sensor]:
     return [row.to_model() for row in result.scalars().all()]
 
 
-async def record_moisture_reading(db: AsyncSession, sensor_id: str, level: float) -> bool:
+async def update_sensor_calibration(
+    db: AsyncSession, sensor_id: str, adc_dry: int, adc_wet: int
+) -> Sensor | None:
+    """Persist calibration values for a sensor. Returns updated model or None if not found."""
+    sensor = await db.get(SensorDB, sensor_id)
+    if sensor is None:
+        return None
+    sensor.adc_dry = adc_dry
+    sensor.adc_wet = adc_wet
+    await db.flush()
+    return sensor.to_model()
+
+
+async def record_moisture_reading(
+    db: AsyncSession,
+    sensor_id: str,
+    level: float,
+    *,
+    auto_water_rise_threshold: float,
+    water_debounce_hours: float,
+) -> bool:
     """Store a moisture reading and update the sensor's last_seen_at.
 
     Always updates last_seen_at (auto-registers the sensor if not yet known).
     Inserts a SensorReading only when the sensor is assigned to a plant.
+    If the moisture rose by at least auto_water_rise_threshold percentage points
+    compared to the previous reading, the plant is automatically marked as watered
+    (subject to the debounce guard in water_plant).
     Returns True if a reading was stored, False if unassigned (still 200 to the sensor).
     """
     now = datetime.now(timezone.utc)
@@ -214,28 +295,41 @@ async def record_moisture_reading(db: AsyncSession, sensor_id: str, level: float
     if plant_id is None:
         return False
 
-    db.add(SensorReadingDB(
-        id=uuid4(),
-        plant_id=plant_id,
-        sensor_id=sensor_id,
-        level=level,
-        recorded_at=now,
-    ))
+    prev_result = await db.execute(
+        select(SensorReadingDB.level)
+        .where(
+            SensorReadingDB.plant_id == plant_id, SensorReadingDB.sensor_id == sensor_id
+        )
+        .order_by(SensorReadingDB.recorded_at.desc())
+        .limit(1)
+    )
+    prev_level = prev_result.scalar_one_or_none()
+
+    db.add(
+        SensorReadingDB(
+            id=uuid4(),
+            plant_id=plant_id,
+            sensor_id=sensor_id,
+            level=level,
+            recorded_at=now,
+        )
+    )
+
+    if prev_level is not None and (level - prev_level) >= auto_water_rise_threshold:
+        await water_plant(db, plant_id, debounce_hours=water_debounce_hours)
+
     return True
 
 
 async def get_sensor_assignments(db: AsyncSession) -> list[SensorAssignment]:
     """Return all sensor-plant assignments with plant name included."""
-    stmt = (
-        select(
-            PlantSensorAssignmentDB.id,
-            PlantSensorAssignmentDB.plant_id,
-            PlantDB.name.label("plant_name"),
-            PlantSensorAssignmentDB.sensor_id,
-            PlantSensorAssignmentDB.assigned_at,
-        )
-        .join(PlantDB, PlantDB.id == PlantSensorAssignmentDB.plant_id)
-    )
+    stmt = select(
+        PlantSensorAssignmentDB.id,
+        PlantSensorAssignmentDB.plant_id,
+        PlantDB.name.label("plant_name"),
+        PlantSensorAssignmentDB.sensor_id,
+        PlantSensorAssignmentDB.assigned_at,
+    ).join(PlantDB, PlantDB.id == PlantSensorAssignmentDB.plant_id)
     result = await db.execute(stmt)
     return [
         SensorAssignment(
@@ -249,12 +343,15 @@ async def get_sensor_assignments(db: AsyncSession) -> list[SensorAssignment]:
     ]
 
 
-async def upsert_sensor_assignment(db: AsyncSession, plant_id: UUID, sensor_id: str) -> SensorAssignment:
+async def upsert_sensor_assignment(
+    db: AsyncSession, plant_id: UUID, sensor_id: str
+) -> SensorAssignment:
     """Assign a sensor to a plant, removing any existing assignment for that sensor."""
     now = datetime.now(timezone.utc)
     await db.execute(
-        delete(PlantSensorAssignmentDB)
-        .where(PlantSensorAssignmentDB.sensor_id == sensor_id)
+        delete(PlantSensorAssignmentDB).where(
+            PlantSensorAssignmentDB.sensor_id == sensor_id
+        )
     )
     assignment = PlantSensorAssignmentDB(
         id=uuid4(),
@@ -286,21 +383,29 @@ async def delete_sensor_assignment(db: AsyncSession, assignment_id: UUID) -> boo
     return result.scalar_one_or_none() is not None
 
 
-async def get_moisture_history(db: AsyncSession, plant_id: UUID, since: datetime) -> list[SensorReading]:
+async def get_moisture_history(
+    db: AsyncSession, plant_id: UUID, since: datetime
+) -> list[SensorReading]:
     """Return moisture readings for a plant since a given datetime, oldest first."""
     result = await db.execute(
         select(SensorReadingDB)
-        .where(SensorReadingDB.plant_id == plant_id, SensorReadingDB.recorded_at >= since)
+        .where(
+            SensorReadingDB.plant_id == plant_id, SensorReadingDB.recorded_at >= since
+        )
         .order_by(SensorReadingDB.recorded_at.asc())
     )
     return [row.to_model() for row in result.scalars().all()]
 
 
-async def get_watering_history(db: AsyncSession, plant_id: UUID, since: datetime) -> list[WateringEvent]:
+async def get_watering_history(
+    db: AsyncSession, plant_id: UUID, since: datetime
+) -> list[WateringEvent]:
     """Return watering events for a plant since a given datetime, oldest first."""
     result = await db.execute(
         select(WateringEventDB)
-        .where(WateringEventDB.plant_id == plant_id, WateringEventDB.watered_at >= since)
+        .where(
+            WateringEventDB.plant_id == plant_id, WateringEventDB.watered_at >= since
+        )
         .order_by(WateringEventDB.watered_at.asc())
     )
     return [row.to_model() for row in result.scalars().all()]
@@ -335,7 +440,11 @@ async def get_plant_thumbnail(db: AsyncSession, plant_id: UUID) -> bytes | None:
 
 async def has_plant_thumbnail(db: AsyncSession, plant_id: UUID) -> bool:
     """Return True if a plant has a thumbnail without loading the blob."""
-    stmt = select(PlantDB.id).where(PlantDB.id == plant_id, PlantDB.thumbnail.isnot(None)).limit(1)
+    stmt = (
+        select(PlantDB.id)
+        .where(PlantDB.id == plant_id, PlantDB.thumbnail.isnot(None))
+        .limit(1)
+    )
     result = await db.execute(stmt)
     return result.scalar_one_or_none() is not None
 
@@ -390,7 +499,9 @@ async def update_subscription(db: AsyncSession, subscription: Subscription) -> N
 
 async def delete_subscription(db: AsyncSession, subscription_id: UUID) -> None:
     """Delete a subscription from the database."""
-    await db.execute(delete(SubscriptionDB).filter(SubscriptionDB.id == subscription_id))
+    await db.execute(
+        delete(SubscriptionDB).filter(SubscriptionDB.id == subscription_id)
+    )
 
 
 async def get_hardiness_map(db: AsyncSession, id: int) -> HardinessMap | None:
@@ -401,7 +512,9 @@ async def get_hardiness_map(db: AsyncSession, id: int) -> HardinessMap | None:
     return db_hardiness_map.to_model()
 
 
-async def get_hardiness_maps_batch(db: AsyncSession, ids: list[int]) -> dict[int, HardinessMap]:
+async def get_hardiness_maps_batch(
+    db: AsyncSession, ids: list[int]
+) -> dict[int, HardinessMap]:
     """Fetch multiple hardiness maps in a single query."""
     stmt = select(HardinessMapDB).where(HardinessMapDB.id.in_(ids))
     result = await db.execute(stmt)

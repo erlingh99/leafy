@@ -7,7 +7,7 @@ from .perenual import (
     create_hardiness_map,
     get_perenual_species_id,
     PerenualConfigurationError,
-    get_hardiness_base_maps
+    get_hardiness_base_maps,
 )
 
 from .mail_service import send_email, send_welcome_email
@@ -19,6 +19,5 @@ __all__ = [
     "get_perenual_species_id",
     "PerenualConfigurationError",
     "send_email",
-    "send_welcome_email"
+    "send_welcome_email",
 ]
-

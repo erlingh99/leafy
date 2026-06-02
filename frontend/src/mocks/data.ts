@@ -122,6 +122,8 @@ export const mockSensors: Sensor[] = [
     registered_at: daysAgo(60),
     last_seen_at: hoursAgo(1),
     is_active: true,
+    adc_dry: null,
+    adc_wet: null,
   },
 ];
 
