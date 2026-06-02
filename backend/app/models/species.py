@@ -2,19 +2,21 @@ from datetime import datetime
 from typing import TypeVar, Annotated
 from pydantic import BaseModel, Field, BeforeValidator
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 def falsy_to_none(x: T) -> T | None:
     return x or None
 
-LeniantOptional = Annotated[T | None, BeforeValidator(falsy_to_none)]
 
+LeniantOptional = Annotated[T | None, BeforeValidator(falsy_to_none)]
 
 
 ###SPECIES_LIST
 
+
 class SpeciesListData(BaseModel):
-    id: int #there are other fields, but this is all we care about
+    id: int  # there are other fields, but this is all we care about
     common_name: str | None = None
     scientific_name: list[str] | None = None
     other_name: list[str] | None = None
@@ -27,10 +29,13 @@ class SpeciesListData(BaseModel):
     species_epithet: str | None = None
     genus: str | None = None
 
+
 class SpeciesListResponse(BaseModel):
     data: list[SpeciesListData]
 
+
 ###SPECIES_DETAILS
+
 
 class Dimension(BaseModel):
     type: str | None
@@ -38,21 +43,26 @@ class Dimension(BaseModel):
     max_value: float | None
     unit: str | None
 
+
 class Hardiness(BaseModel):
     min: int | None
     max: int | None
+
 
 class WateringGeneralBenchmark(BaseModel):
     value: str | None
     unit: str | None
 
+
 class PlantAnatomyItem(BaseModel):
     part: str | None
     color: list[str] | None
 
+
 class PruningCount(BaseModel):
     amount: float | None
     interval: str | None
+
 
 class SpeciesDetailsResponse(BaseModel):
     common_name: str | None = None
@@ -109,15 +119,19 @@ class SpeciesDetailsResponse(BaseModel):
 
 ###SPECIES_GUIDE
 
+
 class GuideSection(BaseModel):
     type: str | None = None
     description: str | None = None
 
+
 class SpeciesGuideData(BaseModel):
     section: list[GuideSection] = Field(default_factory=list)
 
+
 class SpeciesGuideResponse(BaseModel):
     data: list[SpeciesGuideData]
+
 
 class Species(BaseModel):
     perenual_id: int
@@ -125,7 +139,8 @@ class Species(BaseModel):
     care_guides: SpeciesGuideData | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    
+
+
 class HardinessMap(BaseModel):
     id: int
     image: bytes

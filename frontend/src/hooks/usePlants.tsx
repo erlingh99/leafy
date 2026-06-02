@@ -170,6 +170,7 @@ export const usePlants = (t: Translations) => {
       if (!response.ok) {
         throw new Error('Failed to water plant');
       }
+      return response.json() as Promise<{ result: 'watered' | 'debounced' }>;
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['plants'] });
@@ -194,12 +195,20 @@ export const usePlants = (t: Translations) => {
         variant: "destructive",
       });
     },
-    onSuccess: (_, id) => {
+    onSuccess: (data, id) => {
       const plant = plants.find((p) => p.id === id);
-      toast({
-        title: t.plantWatered,
-        description: t.plantWateredDescription(plant?.name || ""),
-      });
+      if (data.result === 'debounced') {
+        queryClient.invalidateQueries({ queryKey: ['plants'] });
+        toast({
+          title: t.plantWateredDebounced,
+          description: t.plantWateredDebouncedDescription(plant?.name || ""),
+        });
+      } else {
+        toast({
+          title: t.plantWatered,
+          description: t.plantWateredDescription(plant?.name || ""),
+        });
+      }
     },
   });
 

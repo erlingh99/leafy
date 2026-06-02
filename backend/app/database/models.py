@@ -1,17 +1,40 @@
 """
 SQLAlchemy models for the database
 """
+
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, JSON, Text, func, LargeBinary
+from sqlalchemy import (
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    Text,
+    func,
+    LargeBinary,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .setup import Base
-from ..models import Plant, Species, Subscription, SpeciesDetailsResponse, SpeciesGuideData, HardinessMap, Sensor, SensorReading, WateringEvent
+from ..models import (
+    Plant,
+    Species,
+    Subscription,
+    SpeciesDetailsResponse,
+    SpeciesGuideData,
+    HardinessMap,
+    Sensor,
+    SensorReading,
+    WateringEvent,
+)
+
 
 class PlantDB(Base):
     """Database model for plants"""
+
     __tablename__ = "plants"
     __table_args__ = (
         Index("ix_plants_perenual_species_id", "perenual_species_id"),
@@ -21,8 +44,7 @@ class PlantDB(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        onupdate=func.now()
+        DateTime(timezone=True), onupdate=func.now()
     )
     name: Mapped[str] = mapped_column(Text())
     species: Mapped[str] = mapped_column(Text())
@@ -32,7 +54,9 @@ class PlantDB(Base):
     image: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
     thumbnail: Mapped[bytes | None] = mapped_column(LargeBinary(), nullable=True)
     perenual_species_id: Mapped[int | None] = mapped_column(
-        Integer(), ForeignKey("plant_species.perenual_id", ondelete="SET NULL"), nullable=True
+        Integer(),
+        ForeignKey("plant_species.perenual_id", ondelete="SET NULL"),
+        nullable=True,
     )
 
     @classmethod
@@ -67,15 +91,16 @@ class PlantDB(Base):
             perenual_species_id=self.perenual_species_id,
         )
 
+
 class HardinessMapDB(Base):
     """Database model for hardiness maps"""
+
     __tablename__ = "hardiness_maps"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     image: Mapped[bytes] = mapped_column(LargeBinary())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        onupdate=func.now()
+        DateTime(timezone=True), onupdate=func.now()
     )
 
     @classmethod
@@ -98,13 +123,13 @@ class HardinessMapDB(Base):
 
 class SpeciesDB(Base):
     """Database model for species information."""
+
     __tablename__ = "plant_species"
 
     perenual_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        onupdate=func.now()
+        DateTime(timezone=True), onupdate=func.now()
     )
     details: Mapped[dict] = mapped_column(JSON())
     care_guides: Mapped[dict] = mapped_column(JSON())
@@ -116,7 +141,9 @@ class SpeciesDB(Base):
             created_at=species.created_at,
             updated_at=species.updated_at,
             details=species.details.model_dump(),
-            care_guides=species.care_guides.model_dump() if species.care_guides else None,
+            care_guides=species.care_guides.model_dump()
+            if species.care_guides
+            else None,
         )
 
     def to_model(self) -> Species:
@@ -125,18 +152,21 @@ class SpeciesDB(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
             details=SpeciesDetailsResponse.model_validate(self.details),
-            care_guides=SpeciesGuideData.model_validate(self.care_guides) if self.care_guides else None,
+            care_guides=SpeciesGuideData.model_validate(self.care_guides)
+            if self.care_guides
+            else None,
         )
+
 
 class SubscriptionDB(Base):
     """Database model for subscriptions"""
+
     __tablename__ = "subscriptions"
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        onupdate=func.now()
+        DateTime(timezone=True), onupdate=func.now()
     )
     name: Mapped[str] = mapped_column(Text())
     email: Mapped[str] = mapped_column(Text(), unique=True)
@@ -149,7 +179,7 @@ class SubscriptionDB(Base):
             created_at=subscription.created_at,
             updated_at=subscription.updated_at,
             name=subscription.name,
-            email=subscription.email
+            email=subscription.email,
         )
 
     def to_model(self) -> Subscription:
@@ -159,28 +189,34 @@ class SubscriptionDB(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
             name=self.name,
-            email=self.email
+            email=self.email,
         )
 
 
 class SensorDB(Base):
     """Tracks registered sensors; last_seen_at updated on each registration and moisture POST"""
+
     __tablename__ = "sensors"
 
     sensor_id: Mapped[str] = mapped_column(Text(), primary_key=True)
     registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    adc_dry: Mapped[int | None] = mapped_column(Integer(), nullable=True)
+    adc_wet: Mapped[int | None] = mapped_column(Integer(), nullable=True)
 
     def to_model(self) -> Sensor:
         return Sensor(
             sensor_id=self.sensor_id,
             registered_at=self.registered_at,
             last_seen_at=self.last_seen_at,
+            adc_dry=self.adc_dry,
+            adc_wet=self.adc_wet,
         )
 
 
 class PlantSensorAssignmentDB(Base):
     """Maps a sensor to a plant; UNIQUE on sensor_id so a sensor belongs to at most one plant"""
+
     __tablename__ = "plant_sensor_assignments"
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
@@ -188,13 +224,17 @@ class PlantSensorAssignmentDB(Base):
         ForeignKey("plants.id", ondelete="CASCADE"), nullable=False
     )
     sensor_id: Mapped[str] = mapped_column(
-        Text(), ForeignKey("sensors.sensor_id", ondelete="CASCADE"), unique=True, nullable=False
+        Text(),
+        ForeignKey("sensors.sensor_id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
     )
     assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class SensorReadingDB(Base):
     """Historical moisture readings linked to a plant at the time of reading"""
+
     __tablename__ = "sensor_readings"
     __table_args__ = (
         Index("ix_sensor_readings_plant_recorded", "plant_id", "recorded_at"),
@@ -221,6 +261,7 @@ class SensorReadingDB(Base):
 
 class WateringEventDB(Base):
     """Historical record of each time a plant was watered"""
+
     __tablename__ = "watering_events"
     __table_args__ = (
         Index("ix_watering_events_plant_watered", "plant_id", "watered_at"),

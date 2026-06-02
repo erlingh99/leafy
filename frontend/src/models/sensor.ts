@@ -3,6 +3,8 @@ export interface Sensor {
   registered_at: string;
   last_seen_at: string;
   is_active: boolean;
+  adc_dry: number | null;
+  adc_wet: number | null;
 }
 
 export interface SensorAssignment {

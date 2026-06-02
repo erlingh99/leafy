@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field as PydanticField
 
 from ..database import (
+    WaterResult,
     delete_plant as db_delete_plant,
     get_db,
     get_plant as db_get_plant,
@@ -33,7 +34,15 @@ from ..database import (
     upsert_species,
     async_session_maker,
 )
-from ..models import Plant, PlantUpdate, PlantResponse, Species, SensorReading, WateringEvent
+from ..config import AUTO_WATER_RISE_THRESHOLD, WATER_DEBOUNCE_HOURS
+from ..models import (
+    Plant,
+    PlantUpdate,
+    PlantResponse,
+    Species,
+    SensorReading,
+    WateringEvent,
+)
 from ..services import (
     PerenualConfigurationError,
     fetch_perenual_enrichment,
@@ -45,7 +54,7 @@ from ..utils import shrink_image, create_thumbnail, parse_data_uri
 plant_router = APIRouter(prefix="/api/plants", tags=["plants"])
 sensor_router = APIRouter(prefix="/api", tags=["sensor"])
 
-logger = logging.getLogger('uvicorn.error')
+logger = logging.getLogger("uvicorn.error")
 
 
 class MoistureReading(BaseModel):
@@ -109,7 +118,13 @@ async def _get_composed_hardiness_map(db: AsyncSession, ids: tuple[int, ...]) ->
 @plant_router.get("", response_model=list[PlantResponse])
 async def get_plants(db: AsyncSession = Depends(get_db)) -> list[PlantResponse]:
     rows = await load_plants_without_images(db)
-    _sensor_keys = {"sensor_id", "moisture_level", "moisture_updated_at", "has_image", "has_thumbnail"}
+    _sensor_keys = {
+        "sensor_id",
+        "moisture_level",
+        "moisture_updated_at",
+        "has_image",
+        "has_thumbnail",
+    }
     return [
         _plant_response(
             Plant(**{k: v for k, v in r.items() if k not in _sensor_keys}),
@@ -122,12 +137,14 @@ async def get_plants(db: AsyncSession = Depends(get_db)) -> list[PlantResponse]:
         for r in rows
     ]
 
+
 @plant_router.get("/species/{perenual_id}", response_model=Species)
 async def get_species(perenual_id: int, db: AsyncSession = Depends(get_db)):
     species = await db_get_species(db, perenual_id)
     if species is None:
         raise HTTPException(status_code=404, detail="Species not found")
     return species
+
 
 @plant_router.get("/species/{perenual_id}/hardiness-map")
 async def get_hardiness_map(
@@ -137,13 +154,13 @@ async def get_hardiness_map(
     species = await db_get_species(db, perenual_id)
     if species is None:
         raise HTTPException(status_code=404, detail="Species not found")
-    
+
     if species.details.hardiness is None:
         raise HTTPException(status_code=404, detail="Hardiness not found")
 
     min_val = species.details.hardiness.min
     max_val = species.details.hardiness.max
-    if (min_val is None or max_val is None):
+    if min_val is None or max_val is None:
         raise HTTPException(status_code=404, detail="Hardiness not found")
 
     if min_val > max_val:
@@ -158,13 +175,17 @@ async def get_hardiness_map(
     headers = {"Cache-Control": "public, max-age=86400"}
     return Response(content=png_bytes, media_type="image/png", headers=headers)
 
+
 @plant_router.get("/{plant_id}", response_model=PlantResponse)
 async def get_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
     db_plant = await db_get_plant(db, plant_id)
     if db_plant is None:
         raise HTTPException(status_code=404, detail="Plant not found")
 
-    thumb_exists, (sensor_id, moisture_level, moisture_updated_at) = await asyncio.gather(
+    (
+        thumb_exists,
+        (sensor_id, moisture_level, moisture_updated_at),
+    ) = await asyncio.gather(
         db_has_plant_thumbnail(db, plant_id),
         get_plant_sensor_data(db, plant_id),
     )
@@ -176,6 +197,7 @@ async def get_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
         moisture_level=moisture_level,
         moisture_updated_at=moisture_updated_at,
     )
+
 
 @plant_router.delete("/{plant_id}")
 async def delete_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
@@ -190,7 +212,9 @@ async def stream_plant_image(plant_id: UUID, db: AsyncSession = Depends(get_db))
     if not image_data:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    image_bytes = image_data.encode('utf-8') if isinstance(image_data, str) else bytes(image_data)
+    image_bytes = (
+        image_data.encode("utf-8") if isinstance(image_data, str) else bytes(image_data)
+    )
     try:
         image_bytes, media_type = parse_data_uri(image_bytes)
     except (ValueError, BinasciiError):
@@ -209,6 +233,7 @@ async def stream_plant_thumbnail(plant_id: UUID, db: AsyncSession = Depends(get_
 
     headers = {"Cache-Control": "public, max-age=86400"}
     return Response(content=thumb, media_type="image/jpeg", headers=headers)
+
 
 @plant_router.put("", response_model=PlantResponse)
 async def set_plant(
@@ -240,6 +265,7 @@ async def set_plant(
         has_thumbnail=bool(thumbnail_bytes),
     )
 
+
 @plant_router.patch("/{plant_id}", response_model=PlantResponse)
 async def update_plant(
     plant_id: UUID,
@@ -257,15 +283,21 @@ async def update_plant(
     if "image" in partial_update:
         set_thumbnail = True
         if partial_update["image"]:
-            partial_update["image"] = await run_in_threadpool(shrink_image, partial_update["image"])
-            thumbnail_update = await run_in_threadpool(create_thumbnail, partial_update["image"])
+            partial_update["image"] = await run_in_threadpool(
+                shrink_image, partial_update["image"]
+            )
+            thumbnail_update = await run_in_threadpool(
+                create_thumbnail, partial_update["image"]
+            )
         else:
             partial_update["image"] = None
 
     update_data = plant.model_dump() | partial_update
     updated_plant = Plant(**update_data)
     updated_plant.updated_at = datetime.now(timezone.utc)
-    await db_update_plant(db, updated_plant, thumbnail=thumbnail_update, set_thumbnail=set_thumbnail)
+    await db_update_plant(
+        db, updated_plant, thumbnail=thumbnail_update, set_thumbnail=set_thumbnail
+    )
     # Commit before returning so the background enrichment task can write without
     # deadlocking against this session's still-open write transaction.
     await db.commit()
@@ -286,25 +318,23 @@ async def update_plant(
         has_thumbnail=has_thumb,
     )
 
+
 @plant_router.post("/water/all")
-async def water_all_plants(
-    db: AsyncSession = Depends(get_db)
-):
-    """Water multiple plants in a single transaction."""
-    await db_water_all_plants(db)
+async def water_all_plants(db: AsyncSession = Depends(get_db)):
+    """Water multiple plants in a single transaction, skipping recently watered ones."""
+    await db_water_all_plants(db, debounce_hours=WATER_DEBOUNCE_HOURS)
     return {"message": "Successfully watered all plants"}
 
-@plant_router.post("/water/{plant_id}")
-async def water_plant(
-    plant_id: UUID,
-    db: AsyncSession = Depends(get_db)
-):
-    """Water a single plant."""
-    result = await db_water_plant(db, plant_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Plant not found")
-    return {"message": "Plant watered successfully"}
 
+@plant_router.post("/water/{plant_id}")
+async def water_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
+    """Water a single plant."""
+    result = await db_water_plant(db, plant_id, debounce_hours=WATER_DEBOUNCE_HOURS)
+    if result == WaterResult.NOT_FOUND:
+        raise HTTPException(status_code=404, detail="Plant not found")
+    if result == WaterResult.DEBOUNCED:
+        return {"result": "debounced", "message": "Plant already watered recently"}
+    return {"result": "watered", "message": "Plant watered successfully"}
 
 
 @plant_router.get("/{plant_id}/moisture-history", response_model=list[SensorReading])
@@ -336,7 +366,13 @@ async def update_moisture(
 
     Always returns 200; updates the sensor's last_seen_at even if not yet assigned to a plant.
     """
-    await record_moisture_reading(db, reading.sensor_id, reading.level)
+    await record_moisture_reading(
+        db,
+        reading.sensor_id,
+        reading.level,
+        auto_water_rise_threshold=AUTO_WATER_RISE_THRESHOLD,
+        water_debounce_hours=WATER_DEBOUNCE_HOURS,
+    )
     return {"message": "Moisture received"}
 
 
@@ -361,10 +397,14 @@ async def _fetch_and_cache_species(species_name: str) -> int:
         async with async_session_maker() as db:
             existing_species = await db_get_species(db, species.id)
             if existing_species is not None:
-                logger.debug("Using existing species data for species_id %s", species.id)
+                logger.debug(
+                    "Using existing species data for species_id %s", species.id
+                )
                 enrichment = existing_species
             else:
-                logger.debug("Fetching species data from API for species_id %s", species.id)
+                logger.debug(
+                    "Fetching species data from API for species_id %s", species.id
+                )
                 enrichment = await fetch_perenual_enrichment(species)
                 await upsert_species(db, enrichment)
                 await db.commit()
@@ -386,7 +426,9 @@ async def fetch_plant_info_and_update(plant_id: UUID, species_name: str) -> None
         async with async_session_maker() as db:
             plant = await db_get_plant(db, plant_id)
             if plant is None:
-                logger.warning("Plant %s no longer exists; skipping enrichment", plant_id)
+                logger.warning(
+                    "Plant %s no longer exists; skipping enrichment", plant_id
+                )
                 return
             plant.perenual_species_id = perenual_id
             plant.updated_at = datetime.now(timezone.utc)
@@ -396,5 +438,7 @@ async def fetch_plant_info_and_update(plant_id: UUID, species_name: str) -> None
     except PerenualConfigurationError as exc:
         logger.error("Perenual configuration error: %s", exc)
     except Exception as exc:
-        logger.warning("Perenual API error for plant %s (%s): %s", plant_id, species_name, exc)
+        logger.warning(
+            "Perenual API error for plant %s (%s): %s", plant_id, species_name, exc
+        )
         return

@@ -12,9 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plant } from "@/models/plant";
+import { SensorAssignment } from "@/models/sensor";
 import { Translations } from "@/translations/types";
 import { useSensors } from "@/hooks/useSensors";
 import { useSensorAssignments } from "@/hooks/useSensorAssignments";
+import { SensorCalibrationDialog } from "@/components/SensorCalibrationDialog";
 
 interface SensorAssignmentManagerProps {
   plants: Plant[];
@@ -32,6 +34,7 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
   const [selectedSensorId, setSelectedSensorId] = useState("");
   const [customSensorId, setCustomSensorId] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [calibratingAssignment, setCalibratingAssignment] = useState<SensorAssignment | null>(null);
 
   const availableSensors = activeSensors.filter(
     (s) => !assignments.some((a) => a.sensor_id === s.sensor_id)
@@ -83,14 +86,22 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
                     <p className="text-sm font-medium truncate">{a.plant_name}</p>
                     <p className="text-xs text-muted-foreground truncate">{a.sensor_id}</p>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="flex-shrink-0"
-                    onClick={() => handleDelete(a.id)}
-                  >
-                    {t.sensorAssignmentDelete}
-                  </Button>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCalibratingAssignment(a)}
+                    >
+                      {t.calibrateSensor}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(a.id)}
+                    >
+                      {t.sensorAssignmentDelete}
+                    </Button>
+                  </div>
                 </div>
               ))
             )}
@@ -155,6 +166,20 @@ export const SensorAssignmentManager: React.FC<SensorAssignmentManagerProps> = (
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {calibratingAssignment && (() => {
+        const sensor = sensors.find((s) => s.sensor_id === calibratingAssignment.sensor_id);
+        return (
+          <SensorCalibrationDialog
+            sensorId={calibratingAssignment.sensor_id}
+            initialDry={sensor?.adc_dry ?? null}
+            initialWet={sensor?.adc_wet ?? null}
+            open={true}
+            onOpenChange={(open) => { if (!open) setCalibratingAssignment(null); }}
+            t={t}
+          />
+        );
+      })()}
     </>
   );
 };

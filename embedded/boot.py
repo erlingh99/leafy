@@ -2,12 +2,14 @@ import time
 
 import network
 
+from config import SENSOR_ID
 from wifi_config import WIFI_PASSWORD, WIFI_SSID
 
 
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
+    wlan.config(hostname="leafy-{}".format(SENSOR_ID))
     if wlan.isconnected():
         print("WiFi already connected:", wlan.ifconfig()[0])
         return True

@@ -134,10 +134,14 @@ async def test_get_species_not_found(client):
 
 
 async def test_watering_interval_validation(client):
-    response = await client.put("/api/plants", json={**PLANT_PAYLOAD, "watering_interval": 0})
+    response = await client.put(
+        "/api/plants", json={**PLANT_PAYLOAD, "watering_interval": 0}
+    )
     assert response.status_code == 422
 
-    response = await client.put("/api/plants", json={**PLANT_PAYLOAD, "watering_interval": 366})
+    response = await client.put(
+        "/api/plants", json={**PLANT_PAYLOAD, "watering_interval": 366}
+    )
     assert response.status_code == 422
 
 
