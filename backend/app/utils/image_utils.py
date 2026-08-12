@@ -1,9 +1,9 @@
-from io import BytesIO
-from base64 import b64decode, b64encode
 import logging
+from base64 import b64decode, b64encode
+from io import BytesIO
 
 from fastapi import HTTPException, status
-from PIL import Image, UnidentifiedImageError, ImageOps
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 MAX_IMAGE_SIZE = (1024, 1024)  # width, height in pixels
 MAX_FILE_SIZE = 1 * 1024 * 1024  # 1 MB in bytes
@@ -137,7 +137,7 @@ def shrink_image(image_bytes: bytes) -> bytes:
             image = ImageOps.exif_transpose(image)
             image.thumbnail(MAX_IMAGE_SIZE, Image.Resampling.LANCZOS)
 
-            optimized_bytes, final_format = optimize_image(image, original_format)
+            optimized_bytes, _ = optimize_image(image, original_format)
 
             # Use optimized version if it's actually smaller
             if len(optimized_bytes) < len(actual_image_bytes):

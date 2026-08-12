@@ -1,24 +1,36 @@
 import asyncio
 import json
+import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import NoResultFound
 
 from ..config import SENSOR_CALIBRATION_PORT, SENSOR_LAN_DOMAIN
 from ..database import (
-    get_db,
-    register_sensor as db_register_sensor,
-    get_all_sensors as db_get_all_sensors,
-    get_sensor_assignments as db_get_sensor_assignments,
-    upsert_sensor_assignment as db_upsert_sensor_assignment,
     delete_sensor_assignment as db_delete_sensor_assignment,
+)
+from ..database import (
+    get_all_sensors as db_get_all_sensors,
+)
+from ..database import (
+    get_sensor_assignments as db_get_sensor_assignments,
+)
+from ..database import (
+    register_sensor as db_register_sensor,
+)
+from ..database import (
     update_sensor_calibration as db_update_sensor_calibration,
 )
+from ..database import (
+    upsert_sensor_assignment as db_upsert_sensor_assignment,
+)
+from ..dependencies import DbSession
 from ..models import Sensor, SensorAssignment
+
+logger = logging.getLogger("uvicorn.error")
 
 sensor_router = APIRouter(prefix="/api/sensors", tags=["sensors"])
 assignment_router = APIRouter(
@@ -46,13 +58,13 @@ class CalibrateRequest(BaseModel):
 
 
 @sensor_router.post("/register", response_model=Sensor)
-async def register_sensor(request: RegisterRequest, db: AsyncSession = Depends(get_db)):
+async def register_sensor(request: RegisterRequest, db: DbSession):
     """Register or re-register a sensor (upsert). Always returns 200."""
     return await db_register_sensor(db, request.sensor_id)
 
 
 @sensor_router.get("", response_model=list[Sensor])
-async def get_sensors(db: AsyncSession = Depends(get_db)):
+async def get_sensors(db: DbSession):
     """Return all registered sensors with is_active flag."""
     return await db_get_all_sensors(db)
 
@@ -65,7 +77,7 @@ async def calibrate_stream(sensor_id: str):
     each JSON line as an SSE event. Only one stream per sensor is active at
     a time (enforced by the sensor's TCP server).
     """
-    host = "leafy-{}.{}".format(sensor_id, SENSOR_LAN_DOMAIN)
+    host = f"leafy-{sensor_id}.{SENSOR_LAN_DOMAIN}"
     port = SENSOR_CALIBRATION_PORT
 
     async def generator():
@@ -96,7 +108,7 @@ async def calibrate_stream(sensor_id: str):
                     line = await asyncio.wait_for(reader.readline(), timeout=3.0)
                     if not line:
                         break
-                    yield "data: {}\n\n".format(line.decode().strip())
+                    yield f"data: {line.decode().strip()}\n\n"
                 except asyncio.TimeoutError:
                     yield "data: {}\n\n".format(json.dumps({"error": "timeout"}))
         finally:
@@ -104,8 +116,10 @@ async def calibrate_stream(sensor_id: str):
             try:
                 writer.close()
                 await writer.wait_closed()
-            except Exception:
-                pass
+            except OSError:
+                logger.debug(
+                    "Error closing sensor connection for %s", sensor_id, exc_info=True
+                )
 
     return StreamingResponse(
         generator(),
@@ -118,7 +132,7 @@ async def calibrate_stream(sensor_id: str):
 async def calibrate_sensor(
     sensor_id: str,
     body: CalibrateRequest,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     """Send calibration values to the sensor and persist them in the database.
 
@@ -158,13 +172,13 @@ async def calibrate_sensor(
 
 
 @assignment_router.get("", response_model=list[SensorAssignment])
-async def get_assignments(db: AsyncSession = Depends(get_db)):
+async def get_assignments(db: DbSession):
     return await db_get_sensor_assignments(db)
 
 
 @assignment_router.post("", response_model=SensorAssignment)
 async def create_assignment(
-    request: AssignmentRequest, db: AsyncSession = Depends(get_db)
+    request: AssignmentRequest, db: DbSession
 ):
     """Assign a sensor to a plant, moving it away from any previous plant."""
     try:
@@ -176,7 +190,7 @@ async def create_assignment(
 
 
 @assignment_router.delete("/{assignment_id}")
-async def delete_assignment(assignment_id: UUID, db: AsyncSession = Depends(get_db)):
+async def delete_assignment(assignment_id: UUID, db: DbSession):
     deleted = await db_delete_sensor_assignment(db, assignment_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Assignment not found")

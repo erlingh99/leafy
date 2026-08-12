@@ -6,16 +6,16 @@ Create Date: 2026-04-27 00:00:00
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 from io import BytesIO
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "0002_resize_thumbnails_128"
-down_revision: Union[str, Sequence[str], None] = "0001_initial_schema"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "0001_initial_schema"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 THUMBNAIL_SIZE = 128
 
@@ -34,7 +34,7 @@ def _regenerate_thumbnail(image_bytes: bytes) -> bytes | None:
             buf = BytesIO()
             thumb.save(buf, format="JPEG", quality=75, optimize=True)
             return buf.getvalue()
-    except Exception:
+    except (OSError, ValueError, Image.DecompressionBombError):
         return None
 
 
@@ -82,7 +82,7 @@ def downgrade() -> None:
                     sa.text("UPDATE plants SET thumbnail = :thumb WHERE id = :id"),
                     {"thumb": buf.getvalue(), "id": plant_id},
                 )
-        except Exception:
+        except (OSError, ValueError, Image.DecompressionBombError):
             conn.execute(
                 sa.text("UPDATE plants SET thumbnail = NULL WHERE id = :id"),
                 {"id": plant_id},

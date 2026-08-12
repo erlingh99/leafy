@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import TypeVar, Annotated
-from pydantic import BaseModel, Field, BeforeValidator
+from typing import Annotated, TypeVar
+
+from pydantic import BaseModel, BeforeValidator, Field
 
 T = TypeVar("T")
 

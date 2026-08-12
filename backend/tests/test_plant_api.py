@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-
 PLANT_PAYLOAD = {
     "name": "My Fern",
     "species": "Boston Fern",

@@ -1,8 +1,8 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from fastapi import FastAPI
 
 from app.database.models import Base
 from app.database.setup import get_db
