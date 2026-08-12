@@ -1,55 +1,80 @@
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
-from uuid import UUID
-from io import BytesIO
 from binascii import Error as BinasciiError
+from datetime import datetime, timedelta, timezone
+from io import BytesIO
+from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from fastapi.responses import Response
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import Response
+from pydantic import BaseModel
+from pydantic import Field as PydanticField
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pydantic import BaseModel, Field as PydanticField
-
+from ..config import AUTO_WATER_RISE_THRESHOLD, WATER_DEBOUNCE_HOURS
 from ..database import (
     WaterResult,
-    delete_plant as db_delete_plant,
-    get_db,
-    get_plant as db_get_plant,
-    get_plant_sensor_data,
-    get_species as db_get_species,
-    water_plant as db_water_plant,
-    water_all_plants as db_water_all_plants,
-    load_plants_without_images,
-    save_plant,
-    update_plant as db_update_plant,
-    record_moisture_reading,
-    get_plant_image as db_get_plant_image,
-    get_plant_thumbnail as db_get_plant_thumbnail,
-    has_plant_thumbnail as db_has_plant_thumbnail,
-    get_hardiness_maps_batch as db_get_hardiness_maps_batch,
-    get_moisture_history as db_get_moisture_history,
-    get_watering_history as db_get_watering_history,
-    upsert_species,
     async_session_maker,
+    get_plant_sensor_data,
+    load_plants_without_images,
+    record_moisture_reading,
+    save_plant,
+    upsert_species,
 )
-from ..config import AUTO_WATER_RISE_THRESHOLD, WATER_DEBOUNCE_HOURS
+from ..database import (
+    delete_plant as db_delete_plant,
+)
+from ..database import (
+    get_hardiness_maps_batch as db_get_hardiness_maps_batch,
+)
+from ..database import (
+    get_moisture_history as db_get_moisture_history,
+)
+from ..database import (
+    get_plant as db_get_plant,
+)
+from ..database import (
+    get_plant_image as db_get_plant_image,
+)
+from ..database import (
+    get_plant_thumbnail as db_get_plant_thumbnail,
+)
+from ..database import (
+    get_species as db_get_species,
+)
+from ..database import (
+    get_watering_history as db_get_watering_history,
+)
+from ..database import (
+    has_plant_thumbnail as db_has_plant_thumbnail,
+)
+from ..database import (
+    update_plant as db_update_plant,
+)
+from ..database import (
+    water_all_plants as db_water_all_plants,
+)
+from ..database import (
+    water_plant as db_water_plant,
+)
+from ..dependencies import DbSession
 from ..models import (
     Plant,
-    PlantUpdate,
     PlantResponse,
-    Species,
+    PlantUpdate,
     SensorReading,
+    Species,
     WateringEvent,
 )
 from ..services import (
     PerenualConfigurationError,
+    create_hardiness_map,
     fetch_perenual_enrichment,
     get_perenual_species_id,
-    create_hardiness_map,
 )
-from ..utils import shrink_image, create_thumbnail, parse_data_uri
+from ..utils import create_thumbnail, parse_data_uri, shrink_image
 
 plant_router = APIRouter(prefix="/api/plants", tags=["plants"])
 sensor_router = APIRouter(prefix="/api", tags=["sensor"])
@@ -116,7 +141,7 @@ async def _get_composed_hardiness_map(db: AsyncSession, ids: tuple[int, ...]) ->
 
 
 @plant_router.get("", response_model=list[PlantResponse])
-async def get_plants(db: AsyncSession = Depends(get_db)) -> list[PlantResponse]:
+async def get_plants(db: DbSession) -> list[PlantResponse]:
     rows = await load_plants_without_images(db)
     _sensor_keys = {
         "sensor_id",
@@ -139,7 +164,7 @@ async def get_plants(db: AsyncSession = Depends(get_db)) -> list[PlantResponse]:
 
 
 @plant_router.get("/species/{perenual_id}", response_model=Species)
-async def get_species(perenual_id: int, db: AsyncSession = Depends(get_db)):
+async def get_species(perenual_id: int, db: DbSession):
     species = await db_get_species(db, perenual_id)
     if species is None:
         raise HTTPException(status_code=404, detail="Species not found")
@@ -149,7 +174,7 @@ async def get_species(perenual_id: int, db: AsyncSession = Depends(get_db)):
 @plant_router.get("/species/{perenual_id}/hardiness-map")
 async def get_hardiness_map(
     perenual_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     species = await db_get_species(db, perenual_id)
     if species is None:
@@ -177,7 +202,7 @@ async def get_hardiness_map(
 
 
 @plant_router.get("/{plant_id}", response_model=PlantResponse)
-async def get_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_plant(plant_id: UUID, db: DbSession):
     db_plant = await db_get_plant(db, plant_id)
     if db_plant is None:
         raise HTTPException(status_code=404, detail="Plant not found")
@@ -200,13 +225,13 @@ async def get_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @plant_router.delete("/{plant_id}")
-async def delete_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
+async def delete_plant(plant_id: UUID, db: DbSession):
     await db_delete_plant(db, plant_id)
     return {"message": "Plant deleted successfully"}
 
 
 @plant_router.get("/{plant_id}/image")
-async def stream_plant_image(plant_id: UUID, db: AsyncSession = Depends(get_db)):
+async def stream_plant_image(plant_id: UUID, db: DbSession):
     """Return the full image for a plant as raw bytes."""
     image_data = await db_get_plant_image(db, plant_id)
     if not image_data:
@@ -225,7 +250,7 @@ async def stream_plant_image(plant_id: UUID, db: AsyncSession = Depends(get_db))
 
 
 @plant_router.get("/{plant_id}/thumbnail")
-async def stream_plant_thumbnail(plant_id: UUID, db: AsyncSession = Depends(get_db)):
+async def stream_plant_thumbnail(plant_id: UUID, db: DbSession):
     """Return the stored thumbnail (raw JPEG bytes)."""
     thumb = await db_get_plant_thumbnail(db, plant_id)
     if not thumb:
@@ -239,7 +264,7 @@ async def stream_plant_thumbnail(plant_id: UUID, db: AsyncSession = Depends(get_
 async def set_plant(
     plant: Plant,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     thumbnail_bytes = None
     if plant.image:
@@ -271,7 +296,7 @@ async def update_plant(
     plant_id: UUID,
     partial_plant: PlantUpdate,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     plant = await db_get_plant(db, plant_id)
     if plant is None:
@@ -320,14 +345,14 @@ async def update_plant(
 
 
 @plant_router.post("/water/all")
-async def water_all_plants(db: AsyncSession = Depends(get_db)):
+async def water_all_plants(db: DbSession):
     """Water multiple plants in a single transaction, skipping recently watered ones."""
     await db_water_all_plants(db, debounce_hours=WATER_DEBOUNCE_HOURS)
     return {"message": "Successfully watered all plants"}
 
 
 @plant_router.post("/water/{plant_id}")
-async def water_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
+async def water_plant(plant_id: UUID, db: DbSession):
     """Water a single plant."""
     result = await db_water_plant(db, plant_id, debounce_hours=WATER_DEBOUNCE_HOURS)
     if result == WaterResult.NOT_FOUND:
@@ -340,8 +365,8 @@ async def water_plant(plant_id: UUID, db: AsyncSession = Depends(get_db)):
 @plant_router.get("/{plant_id}/moisture-history", response_model=list[SensorReading])
 async def get_moisture_history(
     plant_id: UUID,
+    db: DbSession,
     days: int = Query(default=7, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
 ):
     since = datetime.now(timezone.utc) - timedelta(days=days)
     return await db_get_moisture_history(db, plant_id, since)
@@ -350,8 +375,8 @@ async def get_moisture_history(
 @plant_router.get("/{plant_id}/watering-history", response_model=list[WateringEvent])
 async def get_watering_history(
     plant_id: UUID,
+    db: DbSession,
     days: int = Query(default=30, ge=1, le=365),
-    db: AsyncSession = Depends(get_db),
 ):
     since = datetime.now(timezone.utc) - timedelta(days=days)
     return await db_get_watering_history(db, plant_id, since)
@@ -360,7 +385,7 @@ async def get_watering_history(
 @sensor_router.post("/moisture")
 async def update_moisture(
     reading: MoistureReading,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
 ):
     """Receive a moisture reading from an ESP32 sensor and persist it.
 
@@ -437,7 +462,7 @@ async def fetch_plant_info_and_update(plant_id: UUID, species_name: str) -> None
 
     except PerenualConfigurationError as exc:
         logger.error("Perenual configuration error: %s", exc)
-    except Exception as exc:
+    except (ValueError, SQLAlchemyError) as exc:
         logger.warning(
             "Perenual API error for plant %s (%s): %s", plant_id, species_name, exc
         )

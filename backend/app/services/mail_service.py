@@ -1,5 +1,5 @@
 import logging
-from datetime import timedelta, datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from brevo import Brevo
 from brevo.core.api_error import ApiError
@@ -8,9 +8,9 @@ from brevo.transactional_emails import (
     SendTransacEmailRequestToItem,
 )
 
-from ..database import load_subscriptions, load_plants, async_session_maker
-from ..models import Plant, Subscription
 from ..config import BREVO_API_KEY, SENDER_EMAIL
+from ..database import async_session_maker, load_plants, load_subscriptions
+from ..models import Plant, Subscription
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -80,7 +80,5 @@ def send_welcome_email(subscription: Subscription, api_key: str | None = None) -
             ),
         )
         logger.debug("Welcome email sent to %s (%s)", subscription.name, result)
-    except ApiError as exc:
-        logger.exception(
-            "Failed to send welcome email to %s: %s", subscription.email, exc
-        )
+    except ApiError:
+        logger.exception("Failed to send welcome email to %s", subscription.email)

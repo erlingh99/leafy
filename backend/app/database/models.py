@@ -6,30 +6,30 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
+    JSON,
     DateTime,
     Float,
     ForeignKey,
     Index,
     Integer,
-    JSON,
+    LargeBinary,
     Text,
     func,
-    LargeBinary,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .setup import Base
 from ..models import (
-    Plant,
-    Species,
-    Subscription,
-    SpeciesDetailsResponse,
-    SpeciesGuideData,
     HardinessMap,
+    Plant,
     Sensor,
     SensorReading,
+    Species,
+    SpeciesDetailsResponse,
+    SpeciesGuideData,
+    Subscription,
     WateringEvent,
 )
+from .setup import Base
 
 
 class PlantDB(Base):

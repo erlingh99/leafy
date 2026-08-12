@@ -3,23 +3,24 @@ Integration helpers for the Perenual Plant Open API.
 """
 
 import asyncio
-from typing import Any
 import logging
-from PIL import Image
-from pydantic import ValidationError
+from io import BytesIO
+from typing import Any
+
 import httpx
 from fastapi import status
-from io import BytesIO
+from PIL import Image
+from pydantic import ValidationError
 
 from ..config import PERENUAL_API_KEY, PERENUAL_BASE_URL
 from ..models import (
+    HardinessMap,
     Species,
     SpeciesDetailsResponse,
     SpeciesGuideData,
     SpeciesGuideResponse,
-    SpeciesListResponse,
     SpeciesListData,
-    HardinessMap,
+    SpeciesListResponse,
 )
 
 PERENUAL_TIMEOUT = 20  # seconds
@@ -107,7 +108,8 @@ async def fetch_perenual_enrichment(species: SpeciesListData) -> Species:
 
 async def get_hardiness_base_maps() -> list[tuple[int, bytes]]:
     async def fetch_one(client: httpx.AsyncClient, i: int) -> tuple[int, bytes]:
-        url = f"{PERENUAL_BASE_URL.rstrip('/api/')}/storage/image/hardiness/lg/{i}.png"
+        base = PERENUAL_BASE_URL.removesuffix("/api").rstrip("/")
+        url = f"{base}/storage/image/hardiness/lg/{i}.png"
         try:
             response = await client.get(url, timeout=PERENUAL_TIMEOUT)
             response.raise_for_status()

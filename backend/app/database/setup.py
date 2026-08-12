@@ -1,7 +1,8 @@
-from typing import AsyncGenerator
 import asyncio
-from alembic.config import Config
+from collections.abc import AsyncGenerator
+
 from alembic import command
+from alembic.config import Config
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
