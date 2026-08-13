@@ -28,9 +28,7 @@ async def get_subscriptions(db: DbSession) -> list[Subscription]:
 
 
 @subscription_router.get("/{subscription_id}", response_model=Subscription)
-async def get_subscription(
-    subscription_id: UUID, db: DbSession
-) -> Subscription:
+async def get_subscription(subscription_id: UUID, db: DbSession) -> Subscription:
     subscriptions = await load_subscriptions(db)
     if subscription_id in subscriptions:
         return subscriptions[subscription_id]
@@ -38,9 +36,7 @@ async def get_subscription(
 
 
 @subscription_router.delete("/{subscription_id}")
-async def delete_subscription(
-    subscription_id: UUID, db: DbSession
-):
+async def delete_subscription(subscription_id: UUID, db: DbSession):
     await db_delete_subscription(db, subscription_id)
     return {"message": "Subscription deleted successfully"}
 
