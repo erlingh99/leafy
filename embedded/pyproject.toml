@@ -15,6 +15,17 @@ dev = [
     "mpremote>=1.28.0",
 ]
 
+[tool.uv]
+# esptool caps cryptography<49 only for Intel Mac (platform_system == "Darwin" and
+# platform_machine == "x86_64"), which otherwise blocks the universal lock from
+# picking up the cryptography>=50.0.0 fix for CVE-2026-69247. Nobody develops on
+# Intel Mac, so that platform is excluded from the resolved set.
+environments = [
+    "sys_platform == 'linux'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'win32'",
+]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 ignore = ["T201"]  # print() is device serial output
