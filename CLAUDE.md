@@ -66,3 +66,9 @@ docker compose up -d --build
 
 - `pr-checks.yml`: backend (`ty check`, `ruff check`, `pytest`), frontend (`tsc`, `eslint`, `vitest`), and embedded (`ruff check`, `ty check` only — no on-device tests) run independently.
 - `deploy.yml`: on push to `main`, builds+pushes the arm64 Docker image to GHCR, then SSHes over Tailscale to the `leafy` staging environment and runs `scripts/restart.sh`.
+
+## Backups
+
+The `leafy-backup` service in `docker-compose.yml` (`offen/docker-volume-backup:v2`) archives the `leafy_data` volume (`plants.db`) nightly at 03:15 to `${BACKUP_ARCHIVE_ROOT}/leafy` on the host, keeping 30 days of `.tar.gz` files (older ones pruned automatically). `BACKUP_ARCHIVE_ROOT` must be set on the host (same mechanism as `${DNS_IP}`) to the mount point of the external backup HDD, e.g. `/mnt/backup-hdd`. During each backup the `leafy` container is briefly stopped and restarted (via the `docker-volume-backup.stop-during-backup` label) to guarantee a consistent copy of the SQLite file.
+
+To restore: `docker compose stop leafy`, extract the desired `leafy-<timestamp>.tar.gz` from the archive directory so `plants.db` lands back at the `leafy_data` volume's `/app/data` path, then `docker compose start leafy`.

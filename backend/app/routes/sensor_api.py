@@ -177,9 +177,7 @@ async def get_assignments(db: DbSession):
 
 
 @assignment_router.post("", response_model=SensorAssignment)
-async def create_assignment(
-    request: AssignmentRequest, db: DbSession
-):
+async def create_assignment(request: AssignmentRequest, db: DbSession):
     """Assign a sensor to a plant, moving it away from any previous plant."""
     try:
         return await db_upsert_sensor_assignment(
