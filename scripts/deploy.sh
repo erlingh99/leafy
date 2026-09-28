@@ -21,7 +21,7 @@ docker compose up -d
 echo -e "${BLUE}⏳ Waiting for application to be ready...${NC}"
 status=1
 for i in $(seq 1 10); do
-    if curl -sf http://leafy.lan/api/health > /dev/null; then
+    if curl -sfk https://leafy.lan/api/health > /dev/null; then
         status=0
         break
     fi
@@ -30,7 +30,7 @@ done
 
 if [ $status -eq 0 ]; then
     echo -e "${GREEN}✅ Application is running successfully!${NC}"
-    echo -e "${GREEN}🌐 Access the application at: http://leafy.lan/${NC}"
+    echo -e "${GREEN}🌐 Access the application at: https://leafy.lan/${NC}"
 else
     echo -e "${RED}❌ Application failed to start${NC}"
 fi
