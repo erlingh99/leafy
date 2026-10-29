@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from binascii import Error as BinasciiError
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from uuid import UUID
 
@@ -319,7 +319,7 @@ async def update_plant(
 
     update_data = plant.model_dump() | partial_update
     updated_plant = Plant(**update_data)
-    updated_plant.updated_at = datetime.now(timezone.utc)
+    updated_plant.updated_at = datetime.now(UTC)
     await db_update_plant(
         db, updated_plant, thumbnail=thumbnail_update, set_thumbnail=set_thumbnail
     )
@@ -368,7 +368,7 @@ async def get_moisture_history(
     db: DbSession,
     days: int = Query(default=7, ge=1, le=365),
 ):
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     return await db_get_moisture_history(db, plant_id, since)
 
 
@@ -378,7 +378,7 @@ async def get_watering_history(
     db: DbSession,
     days: int = Query(default=30, ge=1, le=365),
 ):
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
     return await db_get_watering_history(db, plant_id, since)
 
 
@@ -456,7 +456,7 @@ async def fetch_plant_info_and_update(plant_id: UUID, species_name: str) -> None
                 )
                 return
             plant.perenual_species_id = perenual_id
-            plant.updated_at = datetime.now(timezone.utc)
+            plant.updated_at = datetime.now(UTC)
             await db_update_plant(db, plant)
             await db.commit()
 

@@ -7,7 +7,7 @@ Create Date: 2026-05-13 00:00:00
 """
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -84,7 +84,7 @@ def upgrade() -> None:
 
     # Migrate existing sensor data from plants table
     conn = op.get_bind()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     plants = conn.execute(
         sa.text(

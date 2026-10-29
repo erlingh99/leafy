@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from brevo import Brevo
 from brevo.core.api_error import ApiError
@@ -27,7 +27,7 @@ async def send_email(API_KEY: str):
     needs_water: list[str] = []
     for plant in plants:
         next_water = plant.last_watered + timedelta(days=plant.watering_interval)
-        if next_water.date() == datetime.now(timezone.utc).date():
+        if next_water.date() == datetime.now(UTC).date():
             needs_water.append(plant.name)
 
     if len(needs_water) == 0 or len(subs) == 0:

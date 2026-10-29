@@ -95,7 +95,7 @@ async def calibrate_stream(sensor_id: str):
             reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(host, port), timeout=5.0
             )
-        except (OSError, asyncio.TimeoutError) as e:
+        except (TimeoutError, OSError) as e:
             yield "data: {}\n\n".format(json.dumps({"error": str(e)}))
             return
 
@@ -109,7 +109,7 @@ async def calibrate_stream(sensor_id: str):
                     if not line:
                         break
                     yield f"data: {line.decode().strip()}\n\n"
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield "data: {}\n\n".format(json.dumps({"error": "timeout"}))
         finally:
             _sensor_connections.pop(sensor_id, None)

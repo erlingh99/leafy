@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, computed_field
@@ -17,9 +17,9 @@ class Sensor(BaseModel):
         last_seen = (
             self.last_seen_at
             if self.last_seen_at.tzinfo is not None
-            else self.last_seen_at.replace(tzinfo=timezone.utc)
+            else self.last_seen_at.replace(tzinfo=UTC)
         )
-        return (datetime.now(timezone.utc) - last_seen).total_seconds() < 24 * 60 * 60
+        return (datetime.now(UTC) - last_seen).total_seconds() < 24 * 60 * 60
 
 
 class SensorAssignment(BaseModel):

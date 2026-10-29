@@ -1,9 +1,9 @@
 # Build frontend
-FROM node:24-alpine AS frontend-builder
+FROM oven/bun:alpine AS frontend-builder
 WORKDIR /app
-COPY frontend/package.json frontend/package-lock.json ./
+COPY frontend/package.json frontend/bun.lock ./
 COPY ./frontend/ .
-RUN npm ci && npm run build
+RUN bun install --frozen-lockfile && bun run build
 
 # Build backend
 FROM ghcr.io/astral-sh/uv:python3.13-alpine AS backend-builder

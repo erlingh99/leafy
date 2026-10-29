@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -65,7 +65,7 @@ async def update_subscription(
             exclude_unset=True, exclude_none=True
         )
         updated_subscription = Subscription(**update_data)
-        updated_subscription.updated_at = datetime.now(timezone.utc)
+        updated_subscription.updated_at = datetime.now(UTC)
         await db_update_subscription(db, updated_subscription)
         return updated_subscription
     raise HTTPException(status_code=404, detail="Subscription not found")

@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Leafy is a houseplant tracking app ("Leafy lapse") with three components:
 
 - `backend/` — FastAPI service (Python, uv) storing plants/species/sensors in SQLite, enriching plant data via the Perenual API, sending watering-reminder emails via Brevo, and serving the built frontend.
-- `frontend/` — React 19 + Vite + Tailwind + shadcn/radix UI, with i18n (`src/translations/`, currently `en-US`/`sv-SE`) and an MSW mock mode (`npm run dev:mock`, backed by `src/mocks/`) for developing against the UI without a live backend.
+- `frontend/` — React 19 + Vite + Tailwind + shadcn/radix UI, with i18n (`src/translations/`, currently `en-US`/`sv-SE`) and an MSW mock mode (`bun run dev:mock`, backed by `src/mocks/`) for developing against the UI without a live backend.
 - `embedded/` — MicroPython firmware for an ESP32 capacitive soil-moisture sensor. Not part of the Docker build; flashed and configured independently per `embedded/README.md`.
 
 The root multi-stage `Dockerfile` builds frontend + backend into one production image (`FRONTEND_DIST` in `backend/app/config.py` points the backend at the built frontend assets).
@@ -27,13 +27,14 @@ Alembic migrations live in `backend/migrations/versions/`; `init_db()` (`app/dat
 
 ### Frontend (`frontend/`)
 ```bash
-npm ci
-npm run dev          # against a real backend
-npm run dev:mock      # against MSW mocks in src/mocks/ — no backend needed
-npm run build
-npm run check          # tsc --noEmit
-npm run lint
-npm run test           # vitest run
+bun install --frozen-lockfile
+bun run dev          # against a real backend
+bun run dev:mock      # against MSW mocks in src/mocks/ — no backend needed
+bun run build
+bun run check          # tsc --noEmit
+bun run lint
+bun run test           # vitest run
+bun audit
 ```
 
 ### Embedded (`embedded/`)

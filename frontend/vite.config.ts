@@ -11,11 +11,11 @@ export default defineConfig(() => ({
   },
   plugins: [
     react(),
-    process.env.ANALYZE && visualizer({ open: true, filename: "dist/stats.html" }),
-  ].filter(Boolean),
+    !!process.env.ANALYZE && visualizer({ open: true, filename: "dist/stats.html" }),
+  ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   build: {

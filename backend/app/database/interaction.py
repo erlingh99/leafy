@@ -2,7 +2,7 @@
 SQLite storage backend for plants
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -175,7 +175,7 @@ async def update_plant(
 
 
 async def water_all_plants(db: AsyncSession, *, debounce_hours: float) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cutoff = now - timedelta(hours=debounce_hours)
 
     recent = await db.execute(
@@ -202,7 +202,7 @@ async def water_all_plants(db: AsyncSession, *, debounce_hours: float) -> None:
 async def water_plant(
     db: AsyncSession, plant_id: UUID, *, debounce_hours: float = 4.0
 ) -> WaterResult:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     cutoff = now - timedelta(hours=debounce_hours)
     recent = await db.execute(
@@ -231,7 +231,7 @@ async def water_plant(
 
 async def register_sensor(db: AsyncSession, sensor_id: str) -> Sensor:
     """Upsert a sensor record, updating last_seen_at on re-registration."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     existing = await db.get(SensorDB, sensor_id)
     if existing:
         existing.last_seen_at = now
@@ -278,7 +278,7 @@ async def record_moisture_reading(
     (subject to the debounce guard in water_plant).
     Returns True if a reading was stored, False if unassigned (still 200 to the sensor).
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     sensor = await db.get(SensorDB, sensor_id)
     if sensor:
@@ -347,7 +347,7 @@ async def upsert_sensor_assignment(
     db: AsyncSession, plant_id: UUID, sensor_id: str
 ) -> SensorAssignment:
     """Assign a sensor to a plant, removing any existing assignment for that sensor."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     await db.execute(
         delete(PlantSensorAssignmentDB).where(
             PlantSensorAssignmentDB.sensor_id == sensor_id
